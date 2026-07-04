@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">QR Scanner</string>
+    <string name="tile_label">Scan QR</string>
+    <string name="tab_scan">Scan</string>
+    <string name="tab_generate">Generate</string>
+    <string name="open">Open</string>
+    <string name="copy">Copy</string>
+    <string name="copied">Copied ✓</string>
+    <string name="dismiss">Dismiss</string>
+    <string name="camera_perm_rationale">Camera access is needed</string>
+    <string name="grant_camera">Grant camera</string>
+    <string name="open_settings">Open settings</string>
+    <string name="enter_text">Enter text to encode</string>
+    <string name="generate">Generate</string>
+    <string name="no_app_found">No app found to open this</string>
+    <string name="qr_content_description">Generated QR code</string>
+    <string name="too_much_text">Too much text for a QR code</string>
+    <string name="scan_instruction">Point camera at QR code</string>
+    <string name="share">Share</string>
+    <string name="save">Save</string>
+    <string name="saved">Saved to gallery ✓</string>
+    <string name="save_failed">Failed to save</string>
+    <string name="save_unsupported">Saving to the gallery needs Android 10 or newer. Use Share instead.</string>
+    <string name="share_failed">Failed to share</string>
+    <string name="back">Back</string>
+    <string name="wifi_network">Wi-Fi network</string>
+    <string name="wifi_hidden">Hidden network</string>
+    <string name="wifi_security_open">Open (no password)</string>
+    <string name="wifi_security_wep">WEP</string>
+    <string name="wifi_security_wpa">WPA/WPA2</string>
+    <string name="wifi_security_sae">WPA3</string>
+    <string name="wifi_security_enterprise">Enterprise</string>
+    <string name="wifi_connect">Add network</string>
+    <string name="wifi_copy_password">Copy password</string>
+    <string name="wifi_password_copied">Password copied ✓</string>
+    <string name="wifi_open_settings">Open Wi-Fi settings</string>
+    <string name="wifi_added">Network added ✓</string>
+    <string name="wifi_already_saved">Network is already saved</string>
+    <string name="wifi_add_failed">Could not add the network</string>
+    <string name="wifi_manual_hint">This network cannot be added automatically. Copy the password and add it in Wi-Fi settings.</string>
+</resources>
+

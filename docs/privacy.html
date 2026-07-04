@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Privacy policy — QR Scanner</title>
+<meta name="description" content="Privacy policy for the QR Scanner Android app. The app collects no personal data and has no internet access.">
+<link rel="icon" href="assets/icon-216.png" type="image/png">
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+
+<header class="hero">
+  <img src="assets/icon.png" alt="QR Scanner app icon">
+  <h1>Privacy policy</h1>
+  <p class="tagline">QR Scanner for Android (<code>ru.qrefka.qrcodescanner</code>)</p>
+  <p class="tagline">Last updated: 29 August 2026</p>
+</header>
+
+<main>
+
+<div class="note">
+  <p><strong>Summary.</strong> QR Scanner has no internet permission, no accounts, and no analytics. It collects no personal data about you. Everything you scan or generate stays on your device.</p>
+</div>
+
+<h2>1. Who this policy is from</h2>
+<!-- TODO: replace with the developer name (or legal entity) used on the store listing.
+     Data protection law and store review both expect the publisher to be named here. -->
+<p>QR Scanner is published by <strong>[developer name]</strong>, who is responsible for this
+policy. Contact details are in section 12.</p>
+
+<h2>2. Data we collect</h2>
+<p>None. The app has no accounts, no analytics, no advertising SDKs, and no crash-reporting service. We do not collect, receive, or have any way to access personal data, device identifiers, or usage statistics.</p>
+
+<h2>3. Camera</h2>
+<p>The app requests the <code>CAMERA</code> permission, and only when you open the Scan tab. The camera feed is analyzed frame by frame on your device to look for QR codes. Frames are never recorded, never written to storage, and never transmitted. Decoding stops as soon as you leave the Scan tab.</p>
+
+<h2>4. Scanned and generated content</h2>
+<p>Text that you scan or encode is held in memory while the app is running. The app writes it to no database, preference file, or log, and declares <code>allowBackup="false"</code>, so it is not included in Android backups or device-transfer flows.</p>
+<p>Content leaves the app only through an action you take:</p>
+<table>
+  <tr><th>Action</th><th>What happens</th></tr>
+  <tr><td>Copy</td><td>The scanned text is placed on the system clipboard.</td></tr>
+  <tr><td>Share</td><td>The generated QR image is handed to the app you pick, through a scoped Android FileProvider.</td></tr>
+  <tr><td>Save</td><td>The generated QR image is written to your gallery (Android 10 and newer).</td></tr>
+  <tr><td>Open</td><td>A scanned link is passed to the Android system, which opens it in the app you choose.</td></tr>
+  <tr><td>Add network (Wi-Fi codes)</td><td>The scanned network details, including the password, are passed to the Android system's own “add network” dialog, which saves the network after you confirm. See section 5.</td></tr>
+</table>
+<p><strong>Files these actions create.</strong> Two of them do put data on disk, and you should
+know where:</p>
+<ul>
+  <li><strong>Share</strong> first writes the QR image to a private cache folder inside the
+  app's own storage, because Android passes another app a file reference rather than the
+  image itself. Only apps you shared with can read it. The app deletes these files on a
+  later share once they are more than an hour old, and clearing the app's cache or
+  uninstalling the app removes them immediately.</li>
+  <li><strong>Save</strong> writes a PNG to <code>Pictures/QR Scanner</code> in your gallery.
+  That file is yours and stays until you delete it.</li>
+</ul>
+<p>Once content reaches another app — or the clipboard — the privacy policy of that app applies.</p>
+
+<h2>5. Wi-Fi QR codes</h2>
+<p>A QR code can carry Wi-Fi credentials (a <code>WIFI:</code> payload). The app recognizes these and parses them on the device, so it shows you the network name, security type and whether the network is hidden, rather than a line of raw text.</p>
+<p>What happens with the password depends on your Android version and the kind of network:</p>
+<ul>
+  <li><strong>Android 11 and newer, ordinary password-protected networks.</strong> The app
+  passes the credentials to the Android system's own “add network” dialog, and that
+  dialog saves the network once you confirm it. The password is not displayed on screen,
+  and the app holds no permission to change your Wi-Fi settings itself — the system does
+  the saving.</li>
+  <li><strong>Everything else</strong> (Android 10 and older, or WEP and enterprise
+  networks that the system dialog does not accept). The app shows the password so you can
+  type it in yourself. That screen sets Android's <code>FLAG_SECURE</code>, which keeps it
+  out of screenshots and out of the recent-apps preview.</li>
+</ul>
+<p>In both cases the password is held only in memory, is written to no storage by the app, and is never transmitted. If you use <strong>Copy password</strong>, it goes to the system clipboard marked as sensitive content, which on Android 13 and newer keeps it out of the clipboard preview, the clipboard history and keyboard suggestions.</p>
+
+<h2>6. Network access</h2>
+<p>The app does not declare the <code>INTERNET</code> permission. It cannot make network requests of any kind, so no data can be sent to us or to a third party by the app itself. Following a scanned link opens a separate app — usually a browser — which does have network access.</p>
+
+<h2>7. Permissions in full</h2>
+<p>The installed package declares exactly one permission:</p>
+<table>
+  <tr><th>Permission</th><th>Why</th><th>When requested</th></tr>
+  <tr><td><code>android.permission.CAMERA</code></td><td>Scanning QR codes</td><td>When the Scan tab opens</td></tr>
+</table>
+<p>No internet, network-state, storage, location, contacts, or microphone permission is
+declared — in particular, none that would let the app read or change your Wi-Fi settings.
+Two install-time permissions that AndroidX libraries would otherwise merge into the package
+are explicitly stripped from the manifest, so the list above is the complete one you will
+see on the store listing and in Android's app info screen.</p>
+<p>The manifest additionally declares a <code>&lt;queries&gt;</code> entry for the system
+“add network” screen. That is a package-visibility declaration, not a permission: it
+lets the app confirm that the dialog it sends Wi-Fi credentials to is the one belonging to
+the operating system, rather than any app that claims to handle them. It grants no access
+of any kind and does not appear in the permission list.</p>
+
+<h2>8. Third-party components</h2>
+<p>The app is built from AndroidX libraries (Jetpack Compose, CameraX) and the ZXing <code>core</code> decoding library. These run entirely on the device and contain no telemetry. No Google Play Services component is present in the app.</p>
+
+<h2>9. Your rights</h2>
+<p>Rights to access, correct, export, or erase personal data have no subject matter here: we
+hold no personal data about you, so there is nothing for us to produce or delete. Data
+protection law in your country may still give you the right to complain to a supervisory
+authority about how an app handles your data — in the EU and the UK, that is your national
+data protection authority.</p>
+
+<h2>10. Children</h2>
+<p>The app collects no data from anyone, and therefore collects no data from children, whatever age threshold applies where you live.</p>
+
+<h2>11. Changes to this policy</h2>
+<p>If the app ever changes in a way that affects this policy, the updated text will be published on this page with a new "last updated" date.</p>
+
+<h2>12. Contact</h2>
+<!-- TODO: replace with the public contact address used on the store listing. -->
+<p>Questions about this policy: <a href="mailto:support@example.com">support@example.com</a>.</p>
+
+<p><a href="index.html">← Back to the app page</a> · <a href="privacy.ru.html">Русская версия</a></p>
+
+</main>
+
+<footer>
+  <span>QR Scanner — MIT licensed</span>
+  <span><a href="index.html">Home</a></span>
+</footer>
+
+</body>
+</html>

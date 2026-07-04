@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">QR-сканер</string>
+    <string name="tile_label">Сканировать QR</string>
+    <string name="tab_scan">Сканировать</string>
+    <string name="tab_generate">Создать</string>
+    <string name="open">Открыть</string>
+    <string name="copy">Копировать</string>
+    <string name="copied">Скопировано ✓</string>
+    <string name="dismiss">Закрыть</string>
+    <string name="camera_perm_rationale">Для сканирования нужен доступ к камере</string>
+    <string name="grant_camera">Разрешить доступ</string>
+    <string name="open_settings">Открыть настройки</string>
+    <string name="enter_text">Введите текст для кодирования</string>
+    <string name="generate">Создать</string>
+    <string name="no_app_found">Нет приложения, которое может это открыть</string>
+    <string name="qr_content_description">Созданный QR-код</string>
+    <string name="too_much_text">Слишком много текста для QR-кода</string>
+    <string name="scan_instruction">Наведите камеру на QR-код</string>
+    <string name="share">Поделиться</string>
+    <string name="save">Сохранить</string>
+    <string name="saved">Сохранено в галерею ✓</string>
+    <string name="save_failed">Не удалось сохранить</string>
+    <string name="save_unsupported">Сохранение в галерею доступно начиная с Android 10. Воспользуйтесь кнопкой «Поделиться».</string>
+    <string name="share_failed">Не удалось поделиться</string>
+    <string name="back">Назад</string>
+    <string name="wifi_network">Сеть Wi-Fi</string>
+    <string name="wifi_hidden">Скрытая сеть</string>
+    <string name="wifi_security_open">Открытая (без пароля)</string>
+    <string name="wifi_security_wep">WEP</string>
+    <string name="wifi_security_wpa">WPA/WPA2</string>
+    <string name="wifi_security_sae">WPA3</string>
+    <string name="wifi_security_enterprise">Корпоративная</string>
+    <string name="wifi_connect">Добавить сеть</string>
+    <string name="wifi_copy_password">Копировать пароль</string>
+    <string name="wifi_password_copied">Пароль скопирован ✓</string>
+    <string name="wifi_open_settings">Открыть настройки Wi-Fi</string>
+    <string name="wifi_added">Сеть добавлена ✓</string>
+    <string name="wifi_already_saved">Сеть уже сохранена</string>
+    <string name="wifi_add_failed">Не удалось добавить сеть</string>
+    <string name="wifi_manual_hint">Эту сеть нельзя добавить автоматически. Скопируйте пароль и добавьте её в настройках Wi-Fi.</string>
+</resources>

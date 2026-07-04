@@ -1,0 +1,78 @@
+# frozen_string_literal: true
+
+default_platform(:android)
+
+# ---------------------------------------------------------------------------
+# Environment variables (set in CI or .env.default):
+#
+#   HUAWEI_CLIENT_ID       — AppGallery Connect API client ID
+#   HUAWEI_CLIENT_SECRET   — AppGallery Connect API client secret
+#   HUAWEI_APP_ID          — App ID from AppGallery Connect console
+#   KEYSTORE_PATH          — Path to the release keystore (default: release.keystore)
+#   KEYSTORE_PASS           — Keystore password
+#   KEY_ALIAS              — Key alias (default: qrcode)
+#   KEY_PASS               — Key password
+#   VERSION_CODE           — Optional; overrides appVersionCode from gradle.properties.
+#                            AppGallery rejects a re-used version code, so every
+#                            upload needs a higher one than the last.
+#   VERSION_NAME           — Optional; overrides appVersionName from gradle.properties.
+# ---------------------------------------------------------------------------
+
+platform :android do
+  desc "Build debug APK"
+  lane :build_debug do
+    gradle(task: "assembleDebug")
+  end
+
+  desc "Run unit tests"
+  lane :test do
+    gradle(task: "test")
+  end
+
+  desc "Build signed release APK"
+  lane :build_release do
+    properties = {
+      "android.injected.signing.store.file" => ENV.fetch("KEYSTORE_PATH", "../release.keystore"),
+      "android.injected.signing.store.password" => ENV.fetch("KEYSTORE_PASS"),
+      "android.injected.signing.key.alias" => ENV.fetch("KEY_ALIAS", "qrcode"),
+      "android.injected.signing.key.password" => ENV.fetch("KEY_PASS"),
+    }
+    properties["appVersionCode"] = ENV["VERSION_CODE"] if ENV["VERSION_CODE"]
+    properties["appVersionName"] = ENV["VERSION_NAME"] if ENV["VERSION_NAME"]
+
+    gradle(task: "assembleRelease", properties: properties)
+  end
+
+  desc "Deploy to Huawei AppGallery"
+  lane :deploy_huawei do
+    build_release
+
+    huawei_appgallery_connect(
+      client_id: ENV.fetch("HUAWEI_CLIENT_ID"),
+      client_secret: ENV.fetch("HUAWEI_CLIENT_SECRET"),
+      app_id: ENV.fetch("HUAWEI_APP_ID"),
+      apk_path: lane_context[SharedValues::GRADLE_APK_OUTPUT_PATH],
+      submit_for_review: false,
+      changelog_path: "./fastlane/metadata/huawei/release_notes.txt"
+    )
+
+    UI.success("✅ APK uploaded to AppGallery Connect")
+  end
+
+  desc "Deploy to Huawei AppGallery and submit for review"
+  lane :release_huawei do
+    build_release
+
+    huawei_appgallery_connect(
+      client_id: ENV.fetch("HUAWEI_CLIENT_ID"),
+      client_secret: ENV.fetch("HUAWEI_CLIENT_SECRET"),
+      app_id: ENV.fetch("HUAWEI_APP_ID"),
+      apk_path: lane_context[SharedValues::GRADLE_APK_OUTPUT_PATH],
+      submit_for_review: true,
+      delay_before_submit_for_review: 15,
+      changelog_path: "./fastlane/metadata/huawei/release_notes.txt"
+    )
+
+    UI.success("✅ APK uploaded and submitted for review")
+  end
+end

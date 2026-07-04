@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>QR Scanner — private QR scanning and generation for Android</title>
+<meta name="description" content="A lightweight, privacy-focused QR code scanner and generator for Android. No Google Play Services, no internet permission, nothing leaves your device.">
+<link rel="icon" href="assets/icon-216.png" type="image/png">
+<link rel="stylesheet" href="assets/style.css">
+<meta property="og:title" content="QR Scanner for Android">
+<meta property="og:description" content="Scan and generate QR codes offline. No Google Play Services, no internet permission.">
+<meta property="og:type" content="website">
+<meta property="og:image" content="assets/icon.png">
+</head>
+<body>
+
+<header class="hero">
+  <img src="assets/icon.png" alt="QR Scanner app icon">
+  <h1>QR Scanner</h1>
+  <p class="tagline">A lightweight, privacy-focused QR code scanner and generator for Android — built with Jetpack Compose and CameraX, with zero Google Play Services.</p>
+  <div class="badges">
+    <span class="badge">~2.4 MB APK</span>
+    <span class="badge">Android 8.0+</span>
+    <span class="badge">Camera permission only</span>
+    <span class="badge">No internet access</span>
+    <span class="badge">MIT licensed</span>
+  </div>
+  <div class="cta">
+    <!-- TODO: point at the AppGallery listing once the app is published. -->
+    <a class="button" href="#download">Download</a>
+    <a class="button secondary" href="privacy.html">Privacy policy</a>
+  </div>
+</header>
+
+<main>
+
+<h2>What it does</h2>
+<ul class="features">
+  <li><strong>Scan</strong><span>Real-time scanning through CameraX, decoded with ZXing on a background thread.</span></li>
+  <li><strong>Generate</strong><span>Turn any text into a QR code, then share it or save it to your gallery.</span></li>
+  <li><strong>Wi-Fi codes</strong><span>Recognizes <code>WIFI:</code> payloads and shows the network name, security type and whether it is hidden. On Android 11 and newer a single tap hands the network to the system dialog that saves it, so the app never needs a Wi-Fi permission of its own.</span></li>
+  <li><strong>Quick Settings tile</strong><span>Start the scanner straight from the notification shade.</span></li>
+  <li><strong>Dark mode</strong><span>Full Material 3 theming that follows the system light/dark setting.</span></li>
+  <li><strong>Localized</strong><span>English and Russian.</span></li>
+</ul>
+
+<h2 id="privacy">Privacy in one paragraph</h2>
+<div class="note">
+  <p>The app declares a single permission — the camera — and asks for it only when you open the Scan tab. It holds no internet permission at all, so scanned or generated content cannot leave your device even in principle. Nothing you scan is written to a database or preference file, there is no analytics SDK, and no account is required. The only files the app creates are ones you ask for: a QR image saved to your gallery, or a short-lived cache copy behind the Share action. The full text is on the <a href="privacy.html">privacy policy</a> page.</p>
+</div>
+
+<h2 id="download">Download</h2>
+<p>Store listings will be linked here once the app is live. Until then you can build it yourself from source:</p>
+<table>
+  <tr><th>Channel</th><th>Status</th></tr>
+  <tr><td>Huawei AppGallery</td><td>Submitted for review <!-- TODO: replace with the listing link --></td></tr>
+  <tr><td>Build from source</td><td><code>./gradlew assembleRelease</code> — see the repository README</td></tr>
+</table>
+
+<h2>Requirements</h2>
+<table>
+  <tr><th>Item</th><th>Value</th></tr>
+  <tr><td>Minimum Android version</td><td>8.0 (API 26)</td></tr>
+  <tr><td>Target Android version</td><td>API 36</td></tr>
+  <tr><td>Saving to the gallery</td><td>Android 10 (API 29) and newer; use Share below that</td></tr>
+  <tr><td>Google Play Services</td><td>Not required</td></tr>
+  <tr><td>Package name</td><td><code>ru.qrefka.qrcodescanner</code></td></tr>
+</table>
+
+<h2 id="support">Support</h2>
+<p>Found a bug or have a request? Open an issue in the project repository, or write to
+<!-- TODO: replace with the public support address you want on the store listing. -->
+<a href="mailto:support@example.com">support@example.com</a>.</p>
+
+</main>
+
+<footer>
+  <span>QR Scanner — MIT licensed</span>
+  <span><a href="privacy.html">Privacy</a> · <a href="#support">Support</a></span>
+</footer>
+
+</body>
+</html>

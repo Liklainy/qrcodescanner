@@ -1,0 +1,2 @@
+json_key_file("") # Not used for Huawei
+package_name("ru.qrefka.qrcodescanner")
