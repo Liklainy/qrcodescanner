@@ -63,7 +63,7 @@ build — AppGallery rejects a duplicate. Either edit the file or pass it in:
 2. My Apps → Create app → fill name (`QR Scanner`), category Tools, device Mobile.
 3. App information → upload icon (`fastlane/metadata/huawei/images/icon_216.png`;
    `icon_512.png` is the same artwork at 512x512 for stores that ask for it),
-   set min/target SDK (26/36).
+   set min/target SDK (26/37).
 4. Release → Version information → upload the signed APK → fill release notes → Submit for review.
 5. Add the privacy URL and content rating when prompted. The privacy policy is
    served from GitHub Pages — see [Project site](#project-site-github-pages) below.
@@ -99,8 +99,8 @@ contact address and the store listing link. See [docs/README.md](docs/README.md)
 
 - JDK 21 (Temurin)
 - Android SDK 37 (build-tools 37.0.0); SDK 35/36 also present locally
-- Gradle 9.4.1 (via wrapper)
-- AGP 9.2.1, Kotlin 2.4.0, Compose via `org.jetbrains.kotlin.plugin.compose` plugin (no `composeOptions`/`kotlinCompilerExtensionVersion`)
+- Gradle 9.7.1 (via wrapper)
+- AGP 9.3.2, Kotlin 2.4.0, Compose via `org.jetbrains.kotlin.plugin.compose` plugin (no `composeOptions`/`kotlinCompilerExtensionVersion`)
 - CameraX 1.6.1 (16 KB-aligned native libs), Compose BOM 2026.06.01, ZXing core 3.5.4
 
 ## Notes on the local environment

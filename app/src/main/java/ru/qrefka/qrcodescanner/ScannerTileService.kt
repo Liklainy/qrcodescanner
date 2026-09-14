@@ -29,11 +29,13 @@ class ScannerTileService : TileService() {
         val launchAction = Runnable {
             val intent = MainActivity.launchScannerIntent(this)
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+                // Only the *creator* mode belongs in the options a PendingIntent is
+                // built with; setPendingIntentBackgroundActivityStartMode is the
+                // sender's to set. Through API 36 the platform quietly reset a sender
+                // mode found here, but an app targeting 37 gets IllegalArgumentException
+                // ("must not be set when creating a PendingIntent") and the tile crashes.
                 @Suppress("DEPRECATION")
                 val options = ActivityOptions.makeBasic().apply {
-                    setPendingIntentBackgroundActivityStartMode(
-                        ActivityOptions.MODE_BACKGROUND_ACTIVITY_START_ALLOWED
-                    )
                     pendingIntentCreatorBackgroundActivityStartMode =
                         ActivityOptions.MODE_BACKGROUND_ACTIVITY_START_ALLOWED
                 }

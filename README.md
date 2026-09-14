@@ -31,7 +31,7 @@ A lightweight, privacy-focused QR code scanner and generator for Android. Built 
 | QR Encoding | ZXing core 3.5.4 |
 | Language | Kotlin |
 | Min SDK | 26 (Android 8.0); gallery save needs 29+ |
-| Target SDK | 36 |
+| Target SDK | 37 |
 
 ## Building
 
