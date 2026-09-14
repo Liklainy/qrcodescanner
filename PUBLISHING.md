@@ -14,38 +14,42 @@ Output: `app/build/outputs/apk/release/app-release-unsigned.apk` (~2.4 MB, well 
 
 ## Sign the APK
 
-AppGallery requires a signed APK. Generate a keystore once (skip if you already have one):
+AppGallery requires a signed APK. Generate a keystore once and **back it up** —
+every future update must be signed with the same key:
 
 ```sh
-keytool -genkey -v -keystore release.keystore -alias qrcode \
-  -keyalg RSA -keysize 2048 -validity 10000
+keytool -genkeypair -v -keystore release.keystore -alias qrcode \
+  -keyalg RSA -keysize 4096 -validity 10000
 ```
 
-Configure signing in `app/build.gradle.kts`:
-
-```kotlin
-android {
-    signingConfigs {
-        create("release") {
-            storeFile = file("../release.keystore")
-            storePassword = System.getenv("KEYSTORE_PASS")
-            keyAlias = "qrcode"
-            keyPassword = System.getenv("KEY_PASS")
-        }
-    }
-    buildTypes {
-        release {
-            signingConfig = signingConfigs.getByName("release")
-            // ... existing minify/shrink config
-        }
-    }
-}
-```
-
-Then rebuild:
+Signing is read from environment variables (`app/build.gradle.kts`); without
+them the release build stays unsigned:
 
 ```sh
-KEYSTORE_PASS=*** KEY_PASS=*** ./gradlew assembleRelease
+SIGNING_KEYSTORE=$PWD/release.keystore SIGNING_KEY_ALIAS=qrcode \
+SIGNING_STORE_PASSWORD=*** SIGNING_KEY_PASSWORD=*** ./gradlew assembleRelease
+```
+
+Output: `app/build/outputs/apk/release/app-release.apk`.
+
+## Release via GitHub Actions
+
+`.github/workflows/release.yml` builds a signed APK when a `v*` tag is pushed and
+attaches it to a GitHub Release (notes from `fastlane/metadata/huawei/release_notes.txt`).
+
+One-time setup — repository **Settings → Secrets and variables → Actions**:
+
+| Secret | Value |
+|---|---|
+| `KEYSTORE_BASE64` | `base64 -i release.keystore \| pbcopy`, then paste |
+| `KEYSTORE_PASSWORD` | keystore password |
+| `KEY_ALIAS` | `qrcode` |
+| `KEY_PASSWORD` | key password (same as keystore password for PKCS12) |
+
+Then release:
+
+```sh
+git tag v1.0 && git push origin v1.0
 ```
 
 ## Bump the version

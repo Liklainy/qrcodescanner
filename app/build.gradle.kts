@@ -22,8 +22,24 @@ android {
         vectorDrawables { useSupportLibrary = true }
     }
 
+    // Release signing comes from the environment (the Release workflow decodes the
+    // keystore from repository secrets). Without SIGNING_KEYSTORE the release build
+    // stays unsigned, so local assembleRelease keeps working without a key.
+    val signingKeystore = System.getenv("SIGNING_KEYSTORE")?.takeIf { it.isNotBlank() }
+    signingConfigs {
+        if (signingKeystore != null) {
+            create("release") {
+                storeFile = file(signingKeystore)
+                storePassword = System.getenv("SIGNING_STORE_PASSWORD")
+                keyAlias = System.getenv("SIGNING_KEY_ALIAS")
+                keyPassword = System.getenv("SIGNING_KEY_PASSWORD")
+            }
+        }
+    }
+
     buildTypes {
         release {
+            signingConfigs.findByName("release")?.let { signingConfig = it }
             isMinifyEnabled = true
             isShrinkResources = true
             proguardFiles(
