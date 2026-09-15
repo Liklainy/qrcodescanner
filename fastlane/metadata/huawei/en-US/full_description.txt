@@ -1,0 +1,28 @@
+QR Scanner reads QR codes with your camera and turns text into a QR code you can
+save or share. It works completely offline: nothing you scan or create leaves your
+phone.
+
+SCAN
+- Point the camera at a code and the result appears right away.
+- Open links, email addresses or map locations with one tap.
+- Copy the result to the clipboard.
+- Wi-Fi codes are recognised: the app shows the network name and security type and
+  hands the credentials to the system "add network" dialog, so it never needs a
+  Wi-Fi permission of its own.
+
+CREATE
+- Type or paste any text and get a QR code.
+- Save it to your gallery or share it with any app.
+
+QUICK SETTINGS TILE
+- Add the scanner to your Quick Settings panel and start a scan from anywhere.
+
+PRIVACY AND SIZE
+- The camera permission is the only one the app asks for, and it is requested when
+  you open the Scan tab.
+- No internet permission at all, so no ads, no analytics and no accounts.
+- Scan history is not stored.
+- About 2.4 MB installed, with no Google services required.
+- Open source under the MIT licence.
+
+Requires Android 8.0 or newer.

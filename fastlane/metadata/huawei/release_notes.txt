@@ -1,1 +1,7 @@
-Bug fixes and performance improvements.
+First release.
+
+- Scan QR codes with the camera, then open or copy the result.
+- Wi-Fi codes are handed to the system add-network dialog.
+- Create a QR code from any text and save or share it.
+- Start a scan from the Quick Settings tile.
+- Works offline; the camera is the only permission.

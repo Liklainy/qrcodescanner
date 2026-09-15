@@ -68,9 +68,37 @@ build — AppGallery rejects a duplicate. Either edit the file or pass it in:
 3. App information → upload icon (`fastlane/metadata/huawei/images/icon_216.png`;
    `icon_512.png` is the same artwork at 512x512 for stores that ask for it),
    set min/target SDK (26/37).
-4. Release → Version information → upload the signed APK → fill release notes → Submit for review.
-5. Add the privacy URL and content rating when prompted. The privacy policy is
+4. App information → paste the listing text from `fastlane/metadata/huawei/en-US/`
+   (`short_description.txt` is the app introduction, `full_description.txt` the
+   description) and, for the Russian locale, from `ru-RU/`.
+5. App information → upload the four screenshots from
+   `fastlane/metadata/huawei/images/phoneScreenshots/` (450x800, the size the
+   console accepts; see [Screenshots](#screenshots) below).
+6. Release → Version information → upload the signed APK → fill release notes
+   (`fastlane/metadata/huawei/release_notes.txt`) → Submit for review.
+7. Add the privacy URL and content rating when prompted. The privacy policy is
    served from GitHub Pages — see [Project site](#project-site-github-pages) below.
+
+## Screenshots
+
+AppGallery takes 3–8 phone screenshots and wants portrait ones at **450x800**
+(PNG/JPG), so a raw 1080x2400 phone capture is both the wrong size and the wrong
+aspect ratio. The store-ready files live in
+`fastlane/metadata/huawei/images/phoneScreenshots/`; the untouched captures are
+kept beside them in `phoneScreenshots-original/`.
+
+To convert a new capture (macOS `sips`, no extra tools): crop away the status and
+navigation bars, pad the sides out to 9:16 in the app's teal, then scale down.
+
+```sh
+sips --cropOffset 100 0 --cropToHeightWidth 2180 1080 shot.png --out /tmp/c.png
+sips --padToHeightWidth 2180 1226 --padColor 00695C /tmp/c.png --out /tmp/p.png
+sips -z 800 450 /tmp/p.png --out phoneScreenshots/shot.png
+```
+
+The crop offsets suit a 1080x2400 Samsung capture; check the result if the phone
+has differently sized bars. Screenshots must show what the app really does — the
+scanner shot needs a real code visible in the viewfinder, not a blank preview.
 
 ## Project site (GitHub Pages)
 
