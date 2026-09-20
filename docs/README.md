@@ -29,10 +29,11 @@ republishes it.
 
 Search the HTML for `TODO` and fill in:
 
-1. **Contact address** — `support@example.com` appears in `index.html` and both
-   policy pages. Use an address you are willing to publish.
-2. **Store link** — the Download section of `index.html` and its table row point
+1. **Store link** — the Download section of `index.html` and its table row point
    at nothing until the AppGallery listing exists.
+
+The publisher name and the contact address (`info@qrefka.ru`) are already filled in
+on `index.html` and both policy pages.
 
 Then update the `Last updated` date in the policy pages whenever their text changes.
 
