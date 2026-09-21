@@ -1,5 +1,8 @@
 # frozen_string_literal: true
 
+require "json"
+require "net/http"
+
 default_platform(:android)
 
 # ---------------------------------------------------------------------------
@@ -17,6 +20,43 @@ default_platform(:android)
 #                            upload needs a higher one than the last.
 #   VERSION_NAME           — Optional; overrides appVersionName from gradle.properties.
 # ---------------------------------------------------------------------------
+
+# The plugin's action only prints a message when the token request fails and
+# then carries on as if the upload had happened, so a lane with bad credentials
+# ends with a green "uploaded" line and nothing in AppGallery. Fetch the token
+# ourselves first, against the same endpoint: this fails the lane and prints
+# what Huawei actually answered.
+def huawei_credentials
+  creds = {
+    client_id: ENV.fetch("HUAWEI_CLIENT_ID").strip,
+    client_secret: ENV.fetch("HUAWEI_CLIENT_SECRET").strip,
+    app_id: ENV.fetch("HUAWEI_APP_ID").strip,
+  }
+  creds.each { |name, value| UI.user_error!("HUAWEI_#{name.upcase} is empty") if value.empty? }
+
+  UI.important("Verifying AppGallery Connect credentials")
+  response = Net::HTTP.post(
+    URI("https://connect-api.cloud.huawei.com/api/oauth2/v1/token"),
+    { client_id: creds[:client_id], client_secret: creds[:client_secret], grant_type: "client_credentials" }.to_json,
+    "Content-Type" => "application/json"
+  )
+  token = begin
+            JSON.parse(response.body.to_s)["access_token"]
+          rescue JSON::ParserError
+            nil
+          end
+
+  if token.nil? || token.empty?
+    UI.user_error!(
+      "AppGallery Connect refused the API client (HTTP #{response.code}): #{response.body.to_s.strip}\n" \
+      "Check HUAWEI_CLIENT_ID / HUAWEI_CLIENT_SECRET, and that the API client has the " \
+      "App administrator (or App release) role for app #{creds[:app_id]} in AGC → Users and permissions → API client."
+    )
+  end
+
+  UI.success("Credentials accepted")
+  creds
+end
 
 platform :android do
   desc "Build debug APK"
@@ -45,12 +85,13 @@ platform :android do
 
   desc "Deploy to Huawei AppGallery"
   lane :deploy_huawei do
+    creds = huawei_credentials
     build_release
 
     huawei_appgallery_connect(
-      client_id: ENV.fetch("HUAWEI_CLIENT_ID"),
-      client_secret: ENV.fetch("HUAWEI_CLIENT_SECRET"),
-      app_id: ENV.fetch("HUAWEI_APP_ID"),
+      client_id: creds[:client_id],
+      client_secret: creds[:client_secret],
+      app_id: creds[:app_id],
       apk_path: lane_context[SharedValues::GRADLE_APK_OUTPUT_PATH],
       submit_for_review: false,
       changelog_path: "./fastlane/metadata/huawei/release_notes.txt"
@@ -61,12 +102,13 @@ platform :android do
 
   desc "Deploy to Huawei AppGallery and submit for review"
   lane :release_huawei do
+    creds = huawei_credentials
     build_release
 
     huawei_appgallery_connect(
-      client_id: ENV.fetch("HUAWEI_CLIENT_ID"),
-      client_secret: ENV.fetch("HUAWEI_CLIENT_SECRET"),
-      app_id: ENV.fetch("HUAWEI_APP_ID"),
+      client_id: creds[:client_id],
+      client_secret: creds[:client_secret],
+      app_id: creds[:app_id],
       apk_path: lane_context[SharedValues::GRADLE_APK_OUTPUT_PATH],
       submit_for_review: true,
       delay_before_submit_for_review: 15,
