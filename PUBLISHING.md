@@ -106,16 +106,21 @@ Stores require a reachable privacy policy URL. It is served from `docs/` by
 GitHub Pages, together with a small landing page.
 
 Enable it once: repository **Settings → Pages** → Source *Deploy from a branch* →
-branch `main`, folder `/docs`. The pages then are:
+branch `main`, folder `/docs`.
+
+`docs/CNAME` points the site at the custom domain `qrcodescanner.qrefka.ru`, so
+the live pages are:
 
 | Page | URL |
 |---|---|
-| Landing page | `https://<owner>.github.io/<repo>/` |
-| Privacy policy (paste this into AppGallery) | `https://<owner>.github.io/<repo>/privacy.html` |
-| Privacy policy, Russian | `https://<owner>.github.io/<repo>/privacy.ru.html` |
+| Landing page | https://qrcodescanner.qrefka.ru/ |
+| Privacy policy (paste this into AppGallery) | https://qrcodescanner.qrefka.ru/privacy.html |
+| Privacy policy, Russian | https://qrcodescanner.qrefka.ru/privacy.ru.html |
 
-Before submitting, fill in the `TODO` markers in `docs/*.html` — the support
-contact address and the store listing link. See [docs/README.md](docs/README.md).
+Without the `CNAME` file they would be at `https://<owner>.github.io/<repo>/` instead.
+
+Before submitting, fill in the remaining `TODO` markers in `docs/index.html` — the
+store listing link. See [docs/README.md](docs/README.md).
 
 ## How the app meets the task
 

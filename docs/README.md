@@ -13,6 +13,7 @@ URL** that AppGallery (and every other store) asks for during submission.
 | `assets/style.css` | Shared stylesheet; teal palette mirrors the app theme |
 | `assets/icon.png`, `assets/icon-216.png` | Copies of the store icons from `fastlane/metadata/huawei/images/` |
 | `.nojekyll` | Serve the files as-is; skip Jekyll (the root `Gemfile` is for Fastlane, not Jekyll) |
+| `CNAME` | Custom domain for the site: `qrcodescanner.qrefka.ru` |
 
 ## Enabling Pages
 
@@ -21,7 +22,9 @@ Repository → **Settings → Pages** → *Build and deployment*:
 - **Source**: Deploy from a branch
 - **Branch**: `main`, folder **`/docs`** → Save
 
-The site goes live at `https://<owner>.github.io/<repo>/` within a minute or two.
+`CNAME` points the site at `qrcodescanner.qrefka.ru`, so it goes live at
+https://qrcodescanner.qrefka.ru/ within a minute or two (without that file it
+would be `https://<owner>.github.io/<repo>/`).
 No workflow or CI minutes are involved; every push to `main` that touches `docs/`
 republishes it.
 
