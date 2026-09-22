@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Privacy policy — QRefka Scan</title>
-<meta name="description" content="Privacy policy for the QRefka Scan Android app. The app collects no personal data and has no internet access.">
+<meta name="description" content="Privacy policy for the QRefka Scan Android app. The app uses the camera and images you pick to read codes on your device, and has no internet access.">
 <link rel="icon" href="assets/icon-216.png" type="image/png">
 <link rel="stylesheet" href="assets/style.css">
 </head>
@@ -15,20 +15,27 @@
   <h1>Privacy policy</h1>
   <p class="tagline">QRefka Scan for Android (<code>ru.qrefka.qrcodescanner</code>)</p>
   <p class="tagline">Last updated: 22 September 2026</p>
+  <p class="tagline"><a href="privacy.zh.html" lang="zh-CN">简体中文</a> · <a href="privacy.ru.html" lang="ru">Русский</a></p>
 </header>
 
 <main>
 
 <div class="note">
-  <p><strong>Summary.</strong> QRefka Scan has no internet permission, no accounts, and no analytics. It collects no personal data about you. Everything you scan or generate stays on your device.</p>
+  <p><strong>Summary.</strong> QRefka Scan has no internet permission, no accounts, and no analytics. It uses the camera, and any picture you choose, to read codes on your device. It sends nothing to us or anyone else. Everything you scan or generate stays on your device.</p>
 </div>
 
 <h2>1. Who this policy is from</h2>
-<p>QRefka Scan is published by <strong>Mikhaylov Mikhail</strong>, who is responsible for this
+<p>QRefka Scan is published by <strong>Mikhail Mikhaylov</strong>, who is responsible for this
 policy. Contact details are in section 12.</p>
 
-<h2>2. Data we collect</h2>
-<p>None. The app has no accounts, no analytics, no advertising SDKs, and no crash-reporting service. We do not collect, receive, or have any way to access personal data, device identifiers, or usage statistics.</p>
+<h2>2. Data the app collects and processes</h2>
+<p>To do its job, the app collects and processes one kind of personal data:</p>
+<table>
+  <tr><th>Data</th><th>Purpose</th><th>Where it goes</th></tr>
+  <tr><td>Camera images (the live camera feed) and a photo you pick from your gallery</td><td>Finding and decoding QR codes and barcodes — the app's core function</td><td>Processed in memory on your device only; never stored, never transmitted, never shared</td></tr>
+</table>
+<p>Camera access is optional: it is requested only when you open the Scan tab, and you can refuse it and still generate codes or scan from a picture. Details are in section 3.</p>
+<p>Nothing else is collected. The app has no accounts, no analytics, no advertising SDKs, and no crash-reporting service. We, the developer, never receive any of this data and have no way to access it, or any device identifiers or usage statistics.</p>
 
 <h2>3. Camera and images</h2>
 <p>The app requests the <code>CAMERA</code> permission, and only when you open the Scan tab. The camera feed is analyzed frame by frame on your device to look for QR codes and barcodes. Frames are never recorded, never written to storage, and never transmitted. Decoding stops as soon as you leave the Scan tab. The flashlight and zoom controls act on the same camera and need nothing further.</p>
@@ -39,7 +46,7 @@ storage or photo permission and cannot browse your gallery. The image is decoded
 on the device, is not copied or stored, and is never transmitted.</p>
 
 <h2>4. Scanned and generated content</h2>
-<p>Text that you scan or encode is held in memory while the app is running. The app writes it to no database, preference file, or log, and declares <code>allowBackup="false"</code>, so it is not included in Android backups or device-transfer flows.</p>
+<p>Text that you scan or encode is held in memory while the app is running. The app writes it to no database, preference file, or log, and declares <code>allowBackup="false"</code>, so it is not included in Android backups or device-transfer flows. The only thing the app keeps between launches is a single on/off flag recording that you agreed to this policy, stored in the app's private storage on your device.</p>
 <p>Content leaves the app only through an action you take:</p>
 <table>
   <tr><th>Action</th><th>What happens</th></tr>
@@ -118,22 +125,25 @@ of any kind and does not appear in the permission list.</p>
 <p>The app is built from AndroidX libraries (Jetpack Compose, CameraX) and the ZXing <code>core</code> decoding library. These run entirely on the device and contain no telemetry. No Google Play Services component is present in the app.</p>
 
 <h2>9. Your rights</h2>
-<p>Rights to access, correct, export, or erase personal data have no subject matter here: we
-hold no personal data about you, so there is nothing for us to produce or delete. Data
+<p>The camera images and pictures described in section 2 exist only in your device's memory for as
+long as it takes to decode them, and never reach us, so we hold no personal data about you that
+we could produce, correct or delete. You can withdraw camera access at any time in Android's
+app settings. Data
 protection law in your country may still give you the right to complain to a supervisory
 authority about how an app handles your data — in the EU and the UK, that is your national
 data protection authority.</p>
 
 <h2>10. Children</h2>
-<p>The app collects no data from anyone, and therefore collects no data from children, whatever age threshold applies where you live.</p>
+<p>The app treats everyone the same way: camera images and picked pictures are processed only on the device, and no data from anyone — children included — is stored by the app or sent to us.</p>
 
 <h2>11. Changes to this policy</h2>
 <p>If the app ever changes in a way that affects this policy, the updated text will be published on this page with a new "last updated" date.</p>
 
 <h2>12. Contact</h2>
-<p>Questions about this policy: <a href="mailto:info@qrefka.ru">info@qrefka.ru</a>.</p>
+<p>Developer: <strong>Mikhail Mikhaylov</strong>.<br>
+Questions about this policy: <a href="mailto:info@qrefka.ru">info@qrefka.ru</a>.</p>
 
-<p><a href="index.html">← Back to the app page</a> · <a href="privacy.ru.html">Русская версия</a></p>
+<p><a href="index.html">← Back to the app page</a> · <a href="privacy.ru.html">Русская версия</a> · <a href="privacy.zh.html">中文版</a></p>
 
 </main>
 

@@ -10,6 +10,7 @@ URL** that AppGallery (and every other store) asks for during submission.
 | `index.html` | Landing page: features, requirements, download and support links |
 | `privacy.html` | Privacy policy — this is the URL you paste into the store console |
 | `privacy.ru.html` | Russian translation of the policy, matching the app's `values-ru` |
+| `privacy.zh.html` | Simplified Chinese translation, matching `values-zh-rCN` — required by AppGallery for release in mainland China |
 | `assets/style.css` | Shared stylesheet; teal palette mirrors the app theme |
 | `assets/icon.png`, `assets/icon-216.png` | Copies of the store icons from `fastlane/metadata/huawei/images/` |
 | `.nojekyll` | Serve the files as-is; skip Jekyll (the root `Gemfile` is for Fastlane, not Jekyll) |

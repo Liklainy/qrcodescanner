@@ -29,6 +29,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveableStateHolder
 import androidx.compose.runtime.setValue
@@ -41,11 +42,15 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
 import ru.qrefka.qrcodescanner.ui.GeneratorScreen
+import ru.qrefka.qrcodescanner.ui.PrivacyConsentScreen
 import ru.qrefka.qrcodescanner.ui.ScannerScreen
+import ru.qrefka.qrcodescanner.ui.isPrivacyAccepted
+import ru.qrefka.qrcodescanner.ui.setPrivacyAccepted
 import ru.qrefka.qrcodescanner.ui.theme.QrTheme
 
 class MainActivity : ComponentActivity() {
     private var currentTab by mutableIntStateOf(0)
+    private var privacyAccepted by mutableStateOf(false)
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -63,12 +68,23 @@ class MainActivity : ComponentActivity() {
         } else {
             savedInstanceState?.getInt(STATE_TAB) ?: 0
         }
+        privacyAccepted = isPrivacyAccepted(this)
         setContent {
             QrTheme {
-                AppShell(
-                    selectedTab = currentTab,
-                    onTabSelected = { currentTab = it }
-                )
+                if (privacyAccepted) {
+                    AppShell(
+                        selectedTab = currentTab,
+                        onTabSelected = { currentTab = it }
+                    )
+                } else {
+                    PrivacyConsentScreen(
+                        onAccept = {
+                            setPrivacyAccepted(this)
+                            privacyAccepted = true
+                        },
+                        onDecline = { finishAndRemoveTask() }
+                    )
+                }
             }
         }
     }

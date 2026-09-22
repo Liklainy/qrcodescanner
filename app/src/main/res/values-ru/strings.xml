@@ -62,4 +62,11 @@
     <string name="action_add_contact">Добавить в контакты</string>
     <string name="action_add_event">Добавить в календарь</string>
     <string name="action_search">Найти в интернете</string>
+    <string name="privacy_consent_title">Политика конфиденциальности</string>
+    <string name="privacy_consent_intro">Прежде чем начать, ознакомьтесь с нашей</string>
+    <string name="privacy_policy">Политикой конфиденциальности</string>
+    <string name="privacy_consent_outro">. Приложение использует камеру только для сканирования кодов на устройстве, не имеет доступа к интернету и не собирает персональные данные. Нажмите «Принимаю», чтобы согласиться и продолжить.</string>
+    <string name="privacy_agree">Принимаю</string>
+    <string name="privacy_decline">Не принимаю</string>
+    <string name="privacy_policy_url">https://qrcodescanner.qrefka.ru/privacy.ru.html</string>
 </resources>
