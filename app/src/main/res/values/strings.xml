@@ -21,7 +21,7 @@
     <string name="no_app_found">No app found to open this</string>
     <string name="qr_content_description">Generated QR code</string>
     <string name="too_much_text">Too much text for a QR code</string>
-    <string name="scan_instruction">Point camera at QR code</string>
+    <string name="scan_instruction">Point the camera at a QR code or barcode</string>
     <string name="share">Share</string>
     <string name="save">Save</string>
     <string name="saved">Saved to gallery ✓</string>
@@ -44,5 +44,23 @@
     <string name="wifi_already_saved">Network is already saved</string>
     <string name="wifi_add_failed">Could not add the network</string>
     <string name="wifi_manual_hint">This network cannot be added automatically. Copy the password and add it in Wi-Fi settings.</string>
+    <string name="scan_from_image">Scan from image</string>
+    <string name="no_code_in_image">No code found in this image</string>
+    <string name="torch_on">Turn on flashlight</string>
+    <string name="torch_off">Turn off flashlight</string>
+    <string name="result_type_phone">Phone number</string>
+    <string name="result_type_sms">Text message</string>
+    <string name="result_type_email">Email</string>
+    <string name="result_type_location">Location</string>
+    <string name="result_type_contact">Contact</string>
+    <string name="result_type_event">Event</string>
+    <string name="result_type_product">Product code</string>
+    <string name="action_call">Call</string>
+    <string name="action_send_sms">Send message</string>
+    <string name="action_send_email">Write email</string>
+    <string name="action_show_on_map">Show on map</string>
+    <string name="action_add_contact">Add to contacts</string>
+    <string name="action_add_event">Add to calendar</string>
+    <string name="action_search">Search the web</string>
 </resources>
 
