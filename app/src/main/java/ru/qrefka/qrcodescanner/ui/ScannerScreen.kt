@@ -107,6 +107,7 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import ru.qrefka.qrcodescanner.R
+import ru.qrefka.qrcodescanner.ui.components.FillScrollColumn
 import ru.qrefka.qrcodescanner.ui.components.LinkGlyph
 import ru.qrefka.qrcodescanner.ui.components.QrMark
 import ru.qrefka.qrcodescanner.ui.components.TextGlyph
@@ -194,7 +195,9 @@ private fun hasCameraPermission(context: Context): Boolean =
 
 @Composable
 private fun PermissionPrompt(bottomReserve: Dp, openSettings: Boolean, onRequest: () -> Unit) {
-    Column(
+    // Scrolls where the prompt is taller than the space above the tab switcher
+    // (landscape, large fonts) instead of spilling past both edges.
+    FillScrollColumn(
         Modifier
             .fillMaxSize()
             .statusBarsPadding()
