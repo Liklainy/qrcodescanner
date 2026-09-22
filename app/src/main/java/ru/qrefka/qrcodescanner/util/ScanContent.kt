@@ -260,16 +260,17 @@ private class ContentLine(val name: String, val params: Map<String, String>, val
  *
  * vCard 2.1 values marked `ENCODING=QUOTED-PRINTABLE` - which is how Android's own
  * contact export writes any non-ASCII name - are decoded here, in the named CHARSET.
- * Their soft line breaks (a trailing `=`) are joined before the value is decoded.
+ * Their soft line breaks (a trailing `=`) are joined before the value is decoded, and
+ * ahead of unfolding, so a continuation line that starts with a space keeps it.
  */
 private fun contentLines(text: String): List<ContentLine> {
-    val lines = text.replace("\r\n", "\n").replace('\r', '\n')
-        .replace(Regex("\n[ \t]"), "")
-        .lines()
+    val lines = text.replace("\r\n", "\n").replace('\r', '\n').lines()
     val result = mutableListOf<ContentLine>()
     var index = 0
+    fun folded() = index < lines.size && lines[index].let { it.startsWith(' ') || it.startsWith('\t') }
     while (index < lines.size) {
-        val line = lines[index++]
+        var line = lines[index++]
+        while (':' !in line && folded()) line += lines[index++].substring(1)
         val colon = line.indexOf(':')
         if (colon <= 0) continue
         val head = line.substring(0, colon).split(';')
@@ -281,12 +282,15 @@ private fun contentLines(text: String): List<ContentLine> {
         val quotedPrintable = params["ENCODING"].equals("QUOTED-PRINTABLE", ignoreCase = true) ||
             "QUOTED-PRINTABLE" in params
         var value = line.substring(colon + 1)
-        if (quotedPrintable) {
-            while (value.endsWith('=') && index < lines.size) {
-                value = value.dropLast(1) + lines[index++]
+        while (true) {
+            value = when {
+                quotedPrintable && value.endsWith('=') && index < lines.size ->
+                    value.dropLast(1) + lines[index++]
+                folded() -> value + lines[index++].substring(1)
+                else -> break
             }
-            value = decodeQuotedPrintable(value, params["CHARSET"])
         }
+        if (quotedPrintable) value = decodeQuotedPrintable(value, params["CHARSET"])
         result.add(ContentLine(head[0].substringAfterLast('.').uppercase(), params, value))
     }
     return result

@@ -141,6 +141,18 @@ class ScanContentTest {
     }
 
     @Test
+    fun `quoted-printable soft break keeps a leading space on the next line`() {
+        // Outlook and Nokia vCard 2.1 exports wrap quoted-printable text with literal spaces.
+        val card = "BEGIN:VCARD\r\nVERSION:2.1\r\n" +
+            "NOTE;ENCODING=QUOTED-PRINTABLE:Meet at=\r\n" +
+            " AB Street, caf=\r\n" +
+            "=C3=A9\r\n" +
+            "END:VCARD"
+        val contact = parseScanContent(card) as ScanContent.Contact
+        assertEquals("Meet at AB Street, café", contact.note)
+    }
+
+    @Test
     fun `mecard contact`() {
         val contact = parseScanContent(
             "MECARD:N:Doe,John;TEL:+123;EMAIL:j@d.test;ADR:Somewhere\\, 1;;"
