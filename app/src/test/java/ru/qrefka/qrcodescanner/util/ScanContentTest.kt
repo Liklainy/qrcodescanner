@@ -128,6 +128,19 @@ class ScanContentTest {
     }
 
     @Test
+    fun `quoted-printable vcard 2_1 fields are decoded`() {
+        // As Android's own contact export writes a non-ASCII name, soft line break included.
+        val card = "BEGIN:VCARD\r\nVERSION:2.1\r\n" +
+            "N;CHARSET=UTF-8;ENCODING=QUOTED-PRINTABLE:=D0=98=D0=B2=D0=B0=D0=BD=D0=BE=D0=B2;=D0=98=\r\n" +
+            "=D0=B2=D0=B0=D0=BD\r\n" +
+            "NOTE;QUOTED-PRINTABLE:caf=C3=A9 =3D ok\r\n" +
+            "END:VCARD"
+        val contact = parseScanContent(card) as ScanContent.Contact
+        assertEquals("Иван Иванов", contact.name)
+        assertEquals("café = ok", contact.note)
+    }
+
+    @Test
     fun `mecard contact`() {
         val contact = parseScanContent(
             "MECARD:N:Doe,John;TEL:+123;EMAIL:j@d.test;ADR:Somewhere\\, 1;;"

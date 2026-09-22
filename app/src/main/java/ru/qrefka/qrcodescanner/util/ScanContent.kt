@@ -1,6 +1,8 @@
 package ru.qrefka.qrcodescanner.util
 
+import java.io.ByteArrayOutputStream
 import java.net.URLDecoder
+import java.nio.charset.Charset
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.ZoneId
@@ -255,22 +257,64 @@ private class ContentLine(val name: String, val params: Map<String, String>, val
  * Splits vCard or iCalendar text into properties. Folded lines (a continuation starts
  * with a space or tab) are joined first. Group prefixes such as `item1.` are dropped,
  * and a bare vCard 2.1 parameter like `TEL;CELL:` is kept under its own name.
+ *
+ * vCard 2.1 values marked `ENCODING=QUOTED-PRINTABLE` - which is how Android's own
+ * contact export writes any non-ASCII name - are decoded here, in the named CHARSET.
+ * Their soft line breaks (a trailing `=`) are joined before the value is decoded.
  */
-private fun contentLines(text: String): List<ContentLine> =
-    text.replace("\r\n", "\n").replace('\r', '\n')
+private fun contentLines(text: String): List<ContentLine> {
+    val lines = text.replace("\r\n", "\n").replace('\r', '\n')
         .replace(Regex("\n[ \t]"), "")
         .lines()
-        .mapNotNull { line ->
-            val colon = line.indexOf(':')
-            if (colon <= 0) return@mapNotNull null
-            val head = line.substring(0, colon).split(';')
-            val params = head.drop(1).associate { param ->
-                val eq = param.indexOf('=')
-                if (eq < 0) param.uppercase() to ""
-                else param.substring(0, eq).uppercase() to param.substring(eq + 1).trim('"')
-            }
-            ContentLine(head[0].substringAfterLast('.').uppercase(), params, line.substring(colon + 1))
+    val result = mutableListOf<ContentLine>()
+    var index = 0
+    while (index < lines.size) {
+        val line = lines[index++]
+        val colon = line.indexOf(':')
+        if (colon <= 0) continue
+        val head = line.substring(0, colon).split(';')
+        val params = head.drop(1).associate { param ->
+            val eq = param.indexOf('=')
+            if (eq < 0) param.uppercase() to ""
+            else param.substring(0, eq).uppercase() to param.substring(eq + 1).trim('"')
         }
+        val quotedPrintable = params["ENCODING"].equals("QUOTED-PRINTABLE", ignoreCase = true) ||
+            "QUOTED-PRINTABLE" in params
+        var value = line.substring(colon + 1)
+        if (quotedPrintable) {
+            while (value.endsWith('=') && index < lines.size) {
+                value = value.dropLast(1) + lines[index++]
+            }
+            value = decodeQuotedPrintable(value, params["CHARSET"])
+        }
+        result.add(ContentLine(head[0].substringAfterLast('.').uppercase(), params, value))
+    }
+    return result
+}
+
+/** `=XX` hex escapes to bytes, read in [charsetName] (UTF-8 when absent or unknown). */
+private fun decodeQuotedPrintable(value: String, charsetName: String?): String {
+    val charset = charsetName
+        ?.let { runCatching { Charset.forName(it) }.getOrNull() }
+        ?: Charsets.UTF_8
+    val bytes = ByteArrayOutputStream(value.length)
+    var i = 0
+    while (i < value.length) {
+        val c = value[i]
+        if (c == '=' && i + 2 < value.length) {
+            val high = value[i + 1].digitToIntOrNull(16)
+            val low = value[i + 2].digitToIntOrNull(16)
+            if (high != null && low != null) {
+                bytes.write(high * 16 + low)
+                i += 3
+                continue
+            }
+        }
+        bytes.write(c.toString().toByteArray(charset))
+        i++
+    }
+    return String(bytes.toByteArray(), charset)
+}
 
 /** Splits a structured value (N, ADR, ORG) on `;`, leaving escaped `\;` intact. */
 private fun splitComponents(value: String): List<String> {

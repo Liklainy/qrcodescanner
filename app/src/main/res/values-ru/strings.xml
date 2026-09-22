@@ -65,8 +65,11 @@
     <string name="privacy_consent_title">Политика конфиденциальности</string>
     <string name="privacy_consent_intro">Прежде чем начать, ознакомьтесь с нашей</string>
     <string name="privacy_policy">Политикой конфиденциальности</string>
-    <string name="privacy_consent_outro">. Приложение использует камеру только для сканирования кодов на устройстве, не имеет доступа к интернету и не собирает персональные данные. Нажмите «Принимаю», чтобы согласиться и продолжить.</string>
+    <string name="privacy_consent_outro">. Приложение не имеет доступа к интернету. Камера и выбранное вами изображение используются только для распознавания кодов на устройстве: изображения обрабатываются в памяти и никуда не сохраняются и не передаются. Нажмите «Принимаю», чтобы согласиться и продолжить.</string>
     <string name="privacy_agree">Принимаю</string>
     <string name="privacy_decline">Не принимаю</string>
     <string name="privacy_policy_url">https://qrcodescanner.qrefka.ru/privacy.ru.html</string>
+    <string name="privacy_dialog_text">QRefka Scan использует камеру и выбранные вами изображения только для распознавания кодов на устройстве. Ничего не сохраняется и не передаётся, доступа к интернету у приложения нет.\n\nЕсли вы отзовёте согласие, приложение снова запросит его перед использованием.</string>
+    <string name="privacy_open_policy">Открыть политику</string>
+    <string name="privacy_withdraw">Отозвать согласие</string>
 </resources>

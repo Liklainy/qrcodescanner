@@ -65,9 +65,12 @@
     <string name="privacy_consent_title">Privacy policy</string>
     <string name="privacy_consent_intro">Before you start, please read our</string>
     <string name="privacy_policy">Privacy Policy</string>
-    <string name="privacy_consent_outro">. It explains that the app uses the camera only to scan codes on your device, has no internet access, and collects no personal data. Tap Agree to accept it and continue.</string>
+    <string name="privacy_consent_outro">. The app has no internet access. It uses the camera, and any picture you choose to scan, only to read codes on your device: images are processed in memory and are never stored or sent anywhere. Tap Agree to accept the policy and continue.</string>
     <string name="privacy_agree">Agree</string>
     <string name="privacy_decline">Disagree</string>
     <string name="privacy_policy_url">https://qrcodescanner.qrefka.ru/privacy.html</string>
+    <string name="privacy_dialog_text">QRefka Scan uses the camera, and any picture you choose to scan, only to read codes on your device. Nothing is stored or sent, and the app has no internet access.\n\nIf you withdraw your consent, the app will ask again before it can be used.</string>
+    <string name="privacy_open_policy">Read privacy policy</string>
+    <string name="privacy_withdraw">Withdraw consent</string>
 </resources>
 

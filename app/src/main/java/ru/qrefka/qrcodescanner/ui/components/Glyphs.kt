@@ -177,6 +177,24 @@ internal fun ImageGlyph(color: Color, modifier: Modifier = Modifier) {
     }
 }
 
+/** A circled "i", for the privacy and about entry. */
+@Composable
+internal fun InfoGlyph(color: Color, modifier: Modifier = Modifier) {
+    Canvas(modifier) {
+        val u = size.minDimension
+        val stroke = lineStroke()
+        drawCircle(color, radius = 0.42f * u, center = Offset(0.5f * u, 0.5f * u), style = stroke)
+        drawCircle(color, radius = 0.065f * u, center = Offset(0.5f * u, 0.3f * u))
+        drawLine(
+            color,
+            start = Offset(0.5f * u, 0.46f * u),
+            end = Offset(0.5f * u, 0.72f * u),
+            strokeWidth = stroke.width,
+            cap = StrokeCap.Round
+        )
+    }
+}
+
 /** A lightning bolt, for the torch. [filled] shows it lit. */
 @Composable
 internal fun FlashGlyph(color: Color, filled: Boolean, modifier: Modifier = Modifier) {

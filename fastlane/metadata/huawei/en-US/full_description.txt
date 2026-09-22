@@ -43,7 +43,7 @@ PRIVATE BY DESIGN
   app needs no access to them.
 - No internet access, no ads, no analytics and no accounts.
 - No Google services required.
-- Light and dark themes; English and Russian.
+- Light and dark themes; English, Russian and Simplified Chinese.
 - Open source under the MIT licence.
 
 Requires Android 8.0 or newer.

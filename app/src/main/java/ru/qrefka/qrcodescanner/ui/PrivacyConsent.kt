@@ -41,6 +41,12 @@ fun setPrivacyAccepted(context: Context) {
         .edit { putBoolean(KEY_ACCEPTED, true) }
 }
 
+/** Withdraws consent: the next thing the user sees is the first-launch prompt again. */
+fun clearPrivacyAccepted(context: Context) {
+    context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+        .edit { remove(KEY_ACCEPTED) }
+}
+
 /**
  * First-launch prompt to read the privacy policy. It stands in for the whole app
  * until answered, so nothing — the camera request in particular — runs before the
@@ -98,6 +104,35 @@ fun PrivacyConsentScreen(onAccept: () -> Unit, onDecline: () -> Unit) {
             }
         )
     }
+}
+
+/**
+ * Keeps the policy reachable after the first-launch prompt has been answered, and
+ * offers the way back out of it: withdrawing consent returns the app to that prompt.
+ */
+@Composable
+fun PrivacyDialog(onDismiss: () -> Unit, onWithdraw: () -> Unit) {
+    val context = LocalContext.current
+    val policyUrl = stringResource(R.string.privacy_policy_url)
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.privacy_consent_title)) },
+        text = {
+            Text(
+                stringResource(R.string.privacy_dialog_text),
+                style = MaterialTheme.typography.bodyMedium,
+                modifier = Modifier.verticalScroll(rememberScrollState())
+            )
+        },
+        confirmButton = {
+            TextButton(onClick = { openPolicy(context, policyUrl) }) {
+                Text(stringResource(R.string.privacy_open_policy))
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onWithdraw) { Text(stringResource(R.string.privacy_withdraw)) }
+        }
+    )
 }
 
 private fun openPolicy(context: Context, url: String) {

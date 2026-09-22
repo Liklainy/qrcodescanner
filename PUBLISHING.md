@@ -70,14 +70,29 @@ build — AppGallery rejects a duplicate. Either edit the file or pass it in:
    set min/target SDK (26/37).
 4. App information → paste the listing text from `fastlane/metadata/huawei/en-US/`
    (`short_description.txt` is the app introduction, `full_description.txt` the
-   description) and, for the Russian locale, from `ru-RU/`.
+   description), for the Russian locale from `ru-RU/`, and for Simplified Chinese
+   (required when the release regions include the Chinese mainland) from `zh-CN/`.
 5. App information → upload the four screenshots from
    `fastlane/metadata/huawei/images/phoneScreenshots/` (450x800, the size the
    console accepts; see [Screenshots](#screenshots) below).
 6. Release → Version information → upload the signed APK → fill release notes
    (`fastlane/metadata/huawei/release_notes.txt`) → Submit for review.
-7. Add the privacy URL and content rating when prompted. The privacy policy is
+7. App information → privacy policy URL: enter the English
+   `https://qrcodescanner.qrefka.ru/privacy.html` as the default and, for the
+   Simplified Chinese language, `https://qrcodescanner.qrefka.ru/privacy.zh.html`.
+   A mainland-China release is rejected without a Chinese policy. The policies are
    served from GitHub Pages — see [Project site](#project-site-github-pages) below.
+   Check that the developer name in section 1 of each policy matches the developer
+   name on the AppGallery Connect account exactly.
+8. App information → Privacy tag (privacy label): declare what the app processes,
+   or the review fails with "collects personal information but no privacy tag".
+   It must agree with section 2 of the policy and the in-app consent text:
+   - Collected data: **Photos and videos** (camera frames and a picked image),
+     purpose **App functionality** (decoding codes).
+   - Processed on the device only; not transmitted, not shared with third
+     parties, not used for tracking or advertising, not linked to the user.
+   - Nothing else: no identifiers, no location, no contacts, no usage data.
+9. Content rating when prompted.
 
 ## Screenshots
 
@@ -114,7 +129,8 @@ the live pages are:
 | Page | URL |
 |---|---|
 | Landing page | https://qrcodescanner.qrefka.ru/ |
-| Privacy policy (paste this into AppGallery) | https://qrcodescanner.qrefka.ru/privacy.html |
+| Privacy policy (AppGallery default) | https://qrcodescanner.qrefka.ru/privacy.html |
+| Privacy policy, Simplified Chinese (AppGallery, zh-CN) | https://qrcodescanner.qrefka.ru/privacy.zh.html |
 | Privacy policy, Russian | https://qrcodescanner.qrefka.ru/privacy.ru.html |
 
 Without the `CNAME` file they would be at `https://<owner>.github.io/<repo>/` instead.
@@ -123,6 +139,8 @@ Before submitting, fill in the remaining `TODO` markers in `docs/index.html` —
 store listing link. See [docs/README.md](docs/README.md).
 
 ## How the app meets the task
+
+- Privacy consent: on first launch a dialog links the policy (in the device language) and the app stays blocked until the user agrees; Disagree closes it. Afterwards the ⓘ button next to the tab switcher reopens the policy and lets the user withdraw consent, which brings the first-launch dialog back.
 
 - Scan: CameraX preview + ZXing `MultiFormatReader` analyze frames; on a hit, show the text with **Open** (shown when the content is a single token starting with a URI scheme, e.g. `https:`, `mailto:`, `geo:`) and **Copy** buttons.
 - Wi-Fi codes: a `WIFI:` payload is parsed (`util/WifiQr.kt`) and the sheet shows the SSID, security type and hidden flag instead of the raw text. **Add network** hands the credentials to the system add-network dialog (`Settings.ACTION_WIFI_ADD_NETWORKS`, API 30+), which does the saving — the app gains no Wi-Fi permission. Where that dialog cannot take the network (API < 30, WEP, enterprise, an out-of-range passphrase) the sheet shows the password for manual entry instead, under `FLAG_SECURE`, with **Copy password** marking the clip sensitive.
