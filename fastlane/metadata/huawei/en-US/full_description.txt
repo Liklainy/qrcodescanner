@@ -1,28 +1,49 @@
-QRefka Scan reads QR codes with your camera and turns text into a QR code you can
-save or share. It works completely offline: nothing you scan or create leaves your
-phone.
+QRefka Scan reads QR codes and barcodes and knows what to do with them: call a
+number, save a contact, add an event to your calendar, join a Wi-Fi network or find
+a product. It also turns text into a QR code you can save or share. Everything works
+offline, and nothing you scan or create leaves your phone.
 
-SCAN
+SCAN WITH THE CAMERA
 - Point the camera at a code and the result appears right away.
-- Open links, email addresses or map locations with one tap.
-- Copy the result to the clipboard.
-- Wi-Fi codes are recognised: the app shows the network name and security type and
-  hands the credentials to the system "add network" dialog, so it never needs a
-  Wi-Fi permission of its own.
+- Flashlight button for dark places.
+- Pinch to zoom for small or distant codes; double-tap to jump to 2x.
 
-CREATE
-- Type or paste any text and get a QR code.
+SCAN FROM AN IMAGE
+- Pick a screenshot or a photo from your gallery and read the code in it.
+- Works even if you have not given camera access.
+
+SUPPORTED CODES
+- 2D codes: QR, Data Matrix, Aztec, PDF417.
+- Barcodes: EAN-13, EAN-8, UPC-A, UPC-E, Code 128, Code 39, Code 93, ITF, Codabar.
+
+SMART ACTIONS FOR EVERY RESULT
+- Links: open in your browser or app.
+- Phone numbers: call, or save as a new contact.
+- Contact cards (vCard, MECARD): add to your contacts with name, phones, emails,
+  company, address and website filled in.
+- Calendar events: add to your calendar with the date, time and place filled in.
+- Email: write a message with the address, subject and text already filled in.
+- Text messages: open your messaging app with the number and text ready to send.
+- Locations: show the place on a map.
+- Product barcodes: search the web for the product.
+- Wi-Fi: see the network name and security type and add the network in one tap,
+  without typing the password.
+- Any result can be copied to the clipboard.
+
+CREATE QR CODES
+- Type or paste any text or link and get a QR code.
 - Save it to your gallery or share it with any app.
 
 QUICK SETTINGS TILE
 - Add the scanner to your Quick Settings panel and start a scan from anywhere.
 
-PRIVACY AND SIZE
-- The camera permission is the only one the app asks for, and it is requested when
-  you open the Scan tab.
-- No internet permission at all, so no ads, no analytics and no accounts.
-- Scan history is not stored.
-- About 2.4 MB installed, with no Google services required.
+PRIVATE BY DESIGN
+- The camera is the only permission the app asks for. Calls, contacts, calendar
+  events and Wi-Fi networks are saved by the system apps after you confirm, so the
+  app needs no access to them.
+- No internet access, no ads, no analytics and no accounts.
+- No Google services required.
+- Light and dark themes; English and Russian.
 - Open source under the MIT licence.
 
 Requires Android 8.0 or newer.

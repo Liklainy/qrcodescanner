@@ -4,11 +4,11 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>QRefka Scan — private QR scanning and generation for Android</title>
-<meta name="description" content="A lightweight, privacy-focused QR code scanner and generator for Android. No Google Play Services, no internet permission, nothing leaves your device.">
+<meta name="description" content="A lightweight, privacy-focused QR code and barcode scanner and QR generator for Android. No Google Play Services, no internet permission, nothing leaves your device.">
 <link rel="icon" href="assets/icon-216.png" type="image/png">
 <link rel="stylesheet" href="assets/style.css">
 <meta property="og:title" content="QRefka Scan for Android">
-<meta property="og:description" content="Scan and generate QR codes offline. No Google Play Services, no internet permission.">
+<meta property="og:description" content="Scan QR codes and barcodes and generate QR codes offline. No Google Play Services, no internet permission.">
 <meta property="og:type" content="website">
 <meta property="og:image" content="assets/icon.png">
 </head>
@@ -17,7 +17,7 @@
 <header class="hero">
   <img src="assets/icon.png" alt="QRefka Scan app icon">
   <h1>QRefka Scan</h1>
-  <p class="tagline">A lightweight, privacy-focused QR code scanner and generator for Android — built with Jetpack Compose and CameraX, with zero Google Play Services.</p>
+  <p class="tagline">A lightweight, privacy-focused QR code and barcode scanner and QR generator for Android — built with Jetpack Compose and CameraX, with zero Google Play Services.</p>
   <div class="badges">
     <span class="badge">~2.4 MB APK</span>
     <span class="badge">Android 8.0+</span>
@@ -36,7 +36,10 @@
 
 <h2>What it does</h2>
 <ul class="features">
-  <li><strong>Scan</strong><span>Real-time scanning through CameraX, decoded with ZXing on a background thread.</span></li>
+  <li><strong>Scan</strong><span>Real-time scanning through CameraX, decoded with ZXing on a background thread, with a flashlight button and pinch-to-zoom.</span></li>
+  <li><strong>Scan from image</strong><span>Read a code from a screenshot or photo picked through the system photo picker — no storage permission, and it works without camera access too.</span></li>
+  <li><strong>Barcodes</strong><span>QR, Data Matrix, Aztec and PDF417, plus EAN-13/8, UPC-A/E, Code 128/39/93, ITF and Codabar.</span></li>
+  <li><strong>Smart actions</strong><span>Call a number, add a contact (vCard, MECARD) or calendar event, write an email or SMS, show a location on a map, or search for a product. Each is handed to the system app, which saves only after you confirm — so the app needs no contacts, calendar or phone permission.</span></li>
   <li><strong>Generate</strong><span>Turn any text into a QR code, then share it or save it to your gallery.</span></li>
   <li><strong>Wi-Fi codes</strong><span>Recognizes <code>WIFI:</code> payloads and shows the network name, security type and whether it is hidden. On Android 11 and newer a single tap hands the network to the system dialog that saves it, so the app never needs a Wi-Fi permission of its own.</span></li>
   <li><strong>Quick Settings tile</strong><span>Start the scanner straight from the notification shade.</span></li>

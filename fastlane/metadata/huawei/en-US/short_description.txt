@@ -1,1 +1,1 @@
-Scan and create QR codes offline. No ads, no accounts, no tracking.
+Scan QR codes and barcodes, create QR codes. Offline, no ads, no tracking.

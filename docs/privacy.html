@@ -14,7 +14,7 @@
   <img src="assets/icon.png" alt="QRefka Scan app icon">
   <h1>Privacy policy</h1>
   <p class="tagline">QRefka Scan for Android (<code>ru.qrefka.qrcodescanner</code>)</p>
-  <p class="tagline">Last updated: 20 September 2026</p>
+  <p class="tagline">Last updated: 22 September 2026</p>
 </header>
 
 <main>
@@ -30,8 +30,13 @@ policy. Contact details are in section 12.</p>
 <h2>2. Data we collect</h2>
 <p>None. The app has no accounts, no analytics, no advertising SDKs, and no crash-reporting service. We do not collect, receive, or have any way to access personal data, device identifiers, or usage statistics.</p>
 
-<h2>3. Camera</h2>
-<p>The app requests the <code>CAMERA</code> permission, and only when you open the Scan tab. The camera feed is analyzed frame by frame on your device to look for QR codes. Frames are never recorded, never written to storage, and never transmitted. Decoding stops as soon as you leave the Scan tab.</p>
+<h2>3. Camera and images</h2>
+<p>The app requests the <code>CAMERA</code> permission, and only when you open the Scan tab. The camera feed is analyzed frame by frame on your device to look for QR codes and barcodes. Frames are never recorded, never written to storage, and never transmitted. Decoding stops as soon as you leave the Scan tab. The flashlight and zoom controls act on the same camera and need nothing further.</p>
+<p><strong>Scan from image.</strong> You can also pick a picture from your gallery. The app opens
+the Android system photo picker (or, on devices without it, the system file picker), and
+receives access to <em>only the one image you choose</em>, for that moment. It holds no
+storage or photo permission and cannot browse your gallery. The image is decoded in memory
+on the device, is not copied or stored, and is never transmitted.</p>
 
 <h2>4. Scanned and generated content</h2>
 <p>Text that you scan or encode is held in memory while the app is running. The app writes it to no database, preference file, or log, and declares <code>allowBackup="false"</code>, so it is not included in Android backups or device-transfer flows.</p>
@@ -42,6 +47,13 @@ policy. Contact details are in section 12.</p>
   <tr><td>Share</td><td>The generated QR image is handed to the app you pick, through a scoped Android FileProvider.</td></tr>
   <tr><td>Save</td><td>The generated QR image is written to your gallery (Android 10 and newer).</td></tr>
   <tr><td>Open</td><td>A scanned link is passed to the Android system, which opens it in the app you choose.</td></tr>
+  <tr><td>Call</td><td>The phone number is passed to your dialer app. The call is placed only if you start it there.</td></tr>
+  <tr><td>Send message</td><td>The number and message text are passed to your messaging app, which sends nothing until you do.</td></tr>
+  <tr><td>Write email</td><td>The address, subject and text are passed to your email app as a draft.</td></tr>
+  <tr><td>Add to contacts</td><td>The contact details (name, phone numbers, email addresses, company, job title, address, website, note) are passed to your contacts app's “new contact” form, which saves them only when you confirm.</td></tr>
+  <tr><td>Add to calendar</td><td>The event details (title, time, place, description) are passed to your calendar app's “new event” screen, which saves them only when you confirm.</td></tr>
+  <tr><td>Show on map</td><td>The coordinates are passed to your map app. If no map app is installed, they are opened in your browser on openstreetmap.org. See section 6.</td></tr>
+  <tr><td>Search the web</td><td>The scanned product code or short text is passed to your search app. If there is none, it is opened in your browser as a search on bing.com. See section 6.</td></tr>
   <tr><td>Add network (Wi-Fi codes)</td><td>The scanned network details, including the password, are passed to the Android system's own “add network” dialog, which saves the network after you confirm. See section 5.</td></tr>
 </table>
 <p><strong>Files these actions create.</strong> Two of them do put data on disk, and you should
@@ -55,6 +67,7 @@ know where:</p>
   <li><strong>Save</strong> writes a PNG to <code>Pictures/QRefka Scan</code> in your gallery.
   That file is yours and stays until you delete it.</li>
 </ul>
+<p>For every one of these actions the app reads nothing back: it cannot see your contacts, calendar, call log or messages, and it learns nothing about what you did in the other app.</p>
 <p>Once content reaches another app — or the clipboard — the privacy policy of that app applies.</p>
 
 <h2>5. Wi-Fi QR codes</h2>
@@ -75,15 +88,23 @@ know where:</p>
 
 <h2>6. Network access</h2>
 <p>The app does not declare the <code>INTERNET</code> permission. It cannot make network requests of any kind, so no data can be sent to us or to a third party by the app itself. Following a scanned link opens a separate app — usually a browser — which does have network access.</p>
+<p>The same applies to <strong>Show on map</strong> and <strong>Search the web</strong>: if
+your map or search app, or the fallback websites openstreetmap.org and bing.com, work
+online, it is that app or website — not QRefka Scan — that sends the coordinates or search
+text over the network, under its own privacy policy. Nothing is sent unless you tap one of
+these buttons.</p>
 
 <h2>7. Permissions in full</h2>
 <p>The installed package declares exactly one permission:</p>
 <table>
   <tr><th>Permission</th><th>Why</th><th>When requested</th></tr>
-  <tr><td><code>android.permission.CAMERA</code></td><td>Scanning QR codes</td><td>When the Scan tab opens</td></tr>
+  <tr><td><code>android.permission.CAMERA</code></td><td>Scanning QR codes and barcodes</td><td>When the Scan tab opens</td></tr>
 </table>
-<p>No internet, network-state, storage, location, contacts, or microphone permission is
-declared — in particular, none that would let the app read or change your Wi-Fi settings.
+<p>No internet, network-state, storage, photo, location, contacts, calendar, phone, SMS or
+microphone permission is declared — in particular, none that would let the app read or
+change your Wi-Fi settings, contacts or calendar. The actions in section 4 work without
+them because the system apps do the saving after you confirm, and the photo picker in
+section 3 grants access to the single image you pick.
 Two install-time permissions that AndroidX libraries would otherwise merge into the package
 are explicitly stripped from the manifest, so the list above is the complete one you will
 see on the store listing and in Android's app info screen.</p>
