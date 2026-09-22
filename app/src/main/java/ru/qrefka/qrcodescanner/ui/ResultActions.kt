@@ -45,6 +45,17 @@ internal fun sendEmail(context: Context, email: ScanContent.Email) {
  * get OpenStreetMap in the browser rather than a dead end.
  */
 internal fun showOnMap(context: Context, location: ScanContent.Location) {
+    if (location.isAddressQuery) {
+        val query = Uri.encode(location.label)
+        try {
+            context.startActivity(
+                Intent(Intent.ACTION_VIEW, Uri.parse("geo:0,0?q=$query")).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            )
+        } catch (_: ActivityNotFoundException) {
+            start(context, Intent(Intent.ACTION_VIEW, Uri.parse("https://www.openstreetmap.org/search?query=$query")))
+        }
+        return
+    }
     val point = "${location.latitude},${location.longitude}"
     val label = location.label.takeIf { it.isNotBlank() }?.let { "(${Uri.encode(it)})" }.orEmpty()
     val geo = Intent(Intent.ACTION_VIEW, Uri.parse("geo:$point?q=$point$label"))

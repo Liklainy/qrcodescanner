@@ -37,6 +37,11 @@ class ScanContentTest {
     }
 
     @Test
+    fun `smsto body may contain a question mark`() {
+        assertEquals(ScanContent.Sms("+123", "Are you coming?"), parseScanContent("SMSTO:+123:Are you coming?"))
+    }
+
+    @Test
     fun `sms uri form reads body from the query`() {
         assertEquals(ScanContent.Sms("+123", "Hi there"), parseScanContent("sms:+123?body=Hi%20there"))
     }
@@ -68,6 +73,13 @@ class ScanContentTest {
             ScanContent.Location(55.7558, 37.6173, "Red Square"),
             parseScanContent("geo:55.7558,37.6173?q=Red%20Square")
         )
+    }
+
+    @Test
+    fun `geo zero point with a query is an address search`() {
+        val location = parseScanContent("geo:0,0?q=1600%20Amphitheatre%20Pkwy") as ScanContent.Location
+        assertTrue(location.isAddressQuery)
+        assertEquals("1600 Amphitheatre Pkwy", location.label)
     }
 
     @Test

@@ -99,14 +99,26 @@ internal fun decodeImage(context: Context, uri: Uri): Result? {
             )
         )
     }
-    val candidates = sequence {
-        yield(bitmap)
-        if (bitmap.width > 800 || bitmap.height > 800) {
-            yield(Bitmap.createScaledBitmap(bitmap, bitmap.width / 2, bitmap.height / 2, true))
+    val candidates = listOf<() -> Bitmap?>(
+        { bitmap },
+        {
+            if (bitmap.width > 800 || bitmap.height > 800) {
+                Bitmap.createScaledBitmap(bitmap, bitmap.width / 2, bitmap.height / 2, true)
+            } else {
+                null
+            }
+        },
+        { Bitmap.createBitmap(bitmap, 0, 0, bitmap.width, bitmap.height, Matrix().apply { postRotate(90f) }, true) },
+    )
+    // A candidate that fails to build or decode is skipped rather than allowed to
+    // crash the app; the next one may still find the code.
+    return candidates.firstNotNullOfOrNull { candidate ->
+        try {
+            candidate()?.let { decodeBitmap(reader, it) }
+        } catch (_: Exception) {
+            null
         }
-        yield(Bitmap.createBitmap(bitmap, 0, 0, bitmap.width, bitmap.height, Matrix().apply { postRotate(90f) }, true))
     }
-    return candidates.firstNotNullOfOrNull { decodeBitmap(reader, it) }
 }
 
 private fun decodeBitmap(reader: MultiFormatReader, bitmap: Bitmap): Result? {
@@ -118,6 +130,8 @@ private fun decodeBitmap(reader: MultiFormatReader, bitmap: Bitmap): Result? {
             return reader.decodeWithState(binary)
         } catch (_: NotFoundException) {
         } catch (_: ReaderException) {
+        } catch (_: RuntimeException) {
+            // zxing throws these on some malformed inputs under TRY_HARDER.
         } finally {
             reader.reset()
         }

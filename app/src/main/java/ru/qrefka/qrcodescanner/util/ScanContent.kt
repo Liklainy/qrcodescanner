@@ -17,7 +17,14 @@ internal sealed interface ScanContent {
     data class Email(val address: String, val subject: String, val body: String) : ScanContent
 
     /** [label] is the `q=` query of a `geo:` URI, empty when there is none. */
-    data class Location(val latitude: Double, val longitude: Double, val label: String) : ScanContent
+    data class Location(val latitude: Double, val longitude: Double, val label: String) : ScanContent {
+        /**
+         * `geo:0,0?q=...` is the standard way to ask for a place by name: the
+         * coordinates are a placeholder and [label] is what to search for.
+         */
+        val isAddressQuery: Boolean
+            get() = latitude == 0.0 && longitude == 0.0 && label.isNotBlank()
+    }
 
     data class Contact(
         val name: String,
@@ -102,15 +109,17 @@ private fun parsePhone(text: String): ScanContent.Phone? =
 private fun parseSms(text: String): ScanContent.Sms? {
     val rest = listOf("smsto:", "sms:", "mmsto:", "mms:").firstNotNullOfOrNull { stripPrefix(text, it) }
         ?: return null
-    if (rest.contains('?')) {
+    // A '?' after the number's ':' is part of an SMSTO message, not a URI query.
+    val question = rest.indexOf('?')
+    val colon = rest.indexOf(':')
+    if (question >= 0 && (colon < 0 || question < colon)) {
         val (number, query) = splitQuery(rest)
         return ScanContent.Sms(decode(number), query["body"].orEmpty())
     }
-    val separator = rest.indexOf(':')
-    return if (separator < 0) {
+    return if (colon < 0) {
         ScanContent.Sms(rest, "")
     } else {
-        ScanContent.Sms(rest.substring(0, separator), rest.substring(separator + 1))
+        ScanContent.Sms(rest.substring(0, colon), rest.substring(colon + 1))
     }
 }
 

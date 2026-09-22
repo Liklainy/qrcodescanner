@@ -760,7 +760,7 @@ internal fun ResultSheet(
         is ScanContent.Event -> listOf(SheetAction(R.string.action_add_event) { addEvent(context, content) })
         is ScanContent.Product -> listOf(SheetAction(R.string.action_search) { webSearch(context, content.code) })
         // Only a short line is worth a search; a paragraph is something to copy.
-        is ScanContent.Text -> if (text.length <= 120 && text.lines().size == 1) {
+        is ScanContent.Text -> if (text.trim().let { it.length <= 120 && it.lines().size == 1 }) {
             listOf(SheetAction(R.string.action_search) { webSearch(context, text.trim()) })
         } else {
             emptyList()
@@ -849,7 +849,8 @@ internal fun ResultSheet(
 private fun copyText(content: ScanContent, raw: String): String = when (content) {
     is ScanContent.Phone -> content.number
     is ScanContent.Email -> content.address
-    is ScanContent.Location -> "${content.latitude}, ${content.longitude}"
+    is ScanContent.Location ->
+        if (content.isAddressQuery) content.label else "${content.latitude}, ${content.longitude}"
     is ScanContent.Product -> content.code
     else -> raw
 }
@@ -865,7 +866,9 @@ private fun ResultDetails(content: ScanContent, raw: String, canAddNetwork: Bool
         is ScanContent.Product -> Headline(content.code)
         is ScanContent.Sms -> Fields(content.number, listOf(content.body))
         is ScanContent.Email -> Fields(content.address, listOf(content.subject, content.body))
-        is ScanContent.Location -> {
+        is ScanContent.Location -> if (content.isAddressQuery) {
+            Headline(content.label)
+        } else {
             val coordinates = "${content.latitude}, ${content.longitude}"
             if (content.label.isBlank()) Headline(coordinates)
             else Fields(content.label, listOf(coordinates))
