@@ -405,7 +405,7 @@ private fun saveBitmapToGallery(context: Context, bitmap: Bitmap): Boolean {
             put(MediaStore.Images.Media.MIME_TYPE, "image/png")
             put(
                 MediaStore.Images.Media.RELATIVE_PATH,
-                "${Environment.DIRECTORY_PICTURES}/QR Scanner"
+                "${Environment.DIRECTORY_PICTURES}/QRefka Scan"
             )
             put(MediaStore.Images.Media.IS_PENDING, 1)
         }

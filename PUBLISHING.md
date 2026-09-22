@@ -1,4 +1,4 @@
-# QR Scanner — AppGallery publishing
+# QRefka Scan — AppGallery publishing
 
 App is built and ready. No Google Play services are used, so it is fully compatible with Huawei AppGallery.
 
@@ -64,7 +64,7 @@ build — AppGallery rejects a duplicate. Either edit the file or pass it in:
 ## Upload to AppGallery
 
 1. Sign in at https://developer.huawei.com → AppGallery Connect.
-2. My Apps → Create app → fill name (`QR Scanner`), category Tools, device Mobile.
+2. My Apps → Create app → fill name (`QRefka Scan`), category Tools, device Mobile.
 3. App information → upload icon (`fastlane/metadata/huawei/images/icon_216.png`;
    `icon_512.png` is the same artwork at 512x512 for stores that ask for it),
    set min/target SDK (26/37).

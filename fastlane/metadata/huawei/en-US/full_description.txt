@@ -1,4 +1,4 @@
-QR Scanner reads QR codes with your camera and turns text into a QR code you can
+QRefka Scan reads QR codes with your camera and turns text into a QR code you can
 save or share. It works completely offline: nothing you scan or create leaves your
 phone.
 

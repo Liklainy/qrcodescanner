@@ -1,4 +1,4 @@
-# QR Scanner
+# QRefka Scan
 
 A lightweight, privacy-focused QR code scanner and generator for Android. Built with Jetpack Compose and CameraX — **zero Google Play Services required**.
 

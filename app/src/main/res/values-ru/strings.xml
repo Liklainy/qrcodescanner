@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">QR-сканер</string>
+    <string name="app_name">QRefka Scan</string>
     <string name="tile_label">Сканировать QR</string>
     <string name="tab_scan">Сканировать</string>
     <string name="tab_generate">Создать</string>
