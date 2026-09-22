@@ -3,8 +3,10 @@
 
 Run from anywhere:  python3 tools/generate_icons.py   (no dependencies)
 
-Everything is described in the 108dp adaptive-icon viewport; the vector
-drawables emit it directly and the store PNGs rasterise the same shapes.
+The launcher mark is described in the 108dp adaptive-icon viewport; the vector
+drawables emit it directly and the store PNGs rasterise the same shapes. The
+Quick Settings tile restates the mark in its own 24dp viewport, at proportions
+that hold up when it is drawn one-ninth that size.
 """
 import os, struct, zlib
 
@@ -136,29 +138,58 @@ adaptive = ('<?xml version="1.0" encoding="utf-8"?>\n'
             '    <foreground android:drawable="@drawable/ic_launcher_foreground" />\n'
             '    <monochrome android:drawable="@drawable/ic_launcher_monochrome" />\n'
             '</adaptive-icon>\n')
-write(os.path.join(RES, "mipmap-anydpi-v26/ic_launcher.xml"), adaptive)
-write(os.path.join(RES, "mipmap-anydpi-v26/ic_launcher_round.xml"), adaptive)
+write(os.path.join(RES, "mipmap-anydpi/ic_launcher.xml"), adaptive)
+write(os.path.join(RES, "mipmap-anydpi/ic_launcher_round.xml"), adaptive)
 
-# Quick Settings tile: same language, but only the three finders and the
-# alignment pattern -- the loose data modules disappear at tile size. The mark
-# is re-fitted to a 24dp viewport with 2dp of padding, since a tile icon has no
-# adaptive-icon safe zone to leave clear.
-def transform(shapes, scale, dx, dy):
-    def t(s):
-        x, y, w, h, r = s
-        return (x * scale + dx, y * scale + dy, w * scale, h * scale, r * scale)
-    return [(sh[0],) + tuple(t(s) for s in sh[1:]) for sh in shapes]
-
+# --- Quick Settings tile ------------------------------------------------------
+# The same mark, re-cut at its own optical size. A tile icon is drawn at 24dp and
+# tinted flat, so the launcher's 16-module grid does not survive the rescale: it
+# yields 1.25dp ring strokes and a 1.25dp dot inside the alignment pattern, which
+# silt up into grey mush below xxhdpi. The tile keeps the design language --
+# rounded finders on three corners, a lighter mark on the fourth -- but spends its
+# 20dp of live area on fewer, heavier parts:
+#   * finders with a thicker ring and a tighter ring-to-core clearance
+#   * the alignment pattern, too fine to survive, replaced by the four data
+#     modules it would have sat among -- a different species from the finders, so
+#     it counterweights them instead of competing with them
+# Everything is a multiple of 0.8dp: ring stroke and module gap are both 1.6, a
+# module is 3.2, and the 2x2 block spans 8.0 against the finders' 9.0, so the
+# negative space reads the same everywhere in the mark.
 TILE_VP, TILE_PAD = 24.0, 2.0
-tile_scale = (TILE_VP - 2 * TILE_PAD) / (GRID * MOD)
-tile_shapes = transform(finder(0, 0) + finder(9, 0) + finder(0, 9) + alignment(9, 9),
-                        tile_scale, TILE_PAD - ORIGIN * tile_scale,
-                        TILE_PAD - ORIGIN * tile_scale)
+T_FINDER = 9.0                                    # outer box of a finder
+T_STROKE = 1.6                                    # ring thickness (1.25 rescaled)
+T_GAP = 1.1                                       # ring-to-core clearance
+T_CORE = T_FINDER - 2 * (T_STROKE + T_GAP)        # 3.6dp core
+T_FAR = TILE_VP - TILE_PAD - T_FINDER             # 13dp: far row/column origin
+T_MODULE = 3.2                                    # bottom-right data module
+T_MGAP = 1.6                                      # gap between them == ring stroke
+
+def tile_finder(x, y):
+    outer = rr(x, y, T_FINDER, T_FINDER, 2.6)
+    inner = T_FINDER - 2 * T_STROKE
+    hole = rr(x + T_STROKE, y + T_STROKE, inner, inner, 1.4)
+    core = rr(x + T_STROKE + T_GAP, y + T_STROKE + T_GAP, T_CORE, T_CORE, 1.0)
+    return [("ring", outer, hole), ("fill", core)]
+
+def tile_quad():
+    """2x2 block of data modules, centred on the axes of the far finders."""
+    centre = T_FAR + T_FINDER / 2.0
+    off = (T_MODULE + T_MGAP) / 2.0
+    return [("fill", rr(centre + sx * off - T_MODULE / 2,
+                        centre + sy * off - T_MODULE / 2,
+                        T_MODULE, T_MODULE, 0.95))
+            for sy in (-1, 1) for sx in (-1, 1)]
+
+def tile_mark():
+    return (tile_finder(TILE_PAD, TILE_PAD)
+            + tile_finder(T_FAR, TILE_PAD)
+            + tile_finder(TILE_PAD, T_FAR)
+            + tile_quad())
 
 tile_body = ('    <path\n'
              '        android:fillColor="@android:color/white"\n'
              '        android:fillType="evenOdd"\n'
-             f'        android:pathData="{path_data(tile_shapes)}" />\n')
+             f'        android:pathData="{path_data(tile_mark())}" />\n')
 write(os.path.join(RES, "drawable/ic_tile.xml"), vector(24, tile_body, viewport=TILE_VP))
 
 # --- PNG rasteriser (store icons) -------------------------------------------

@@ -11,26 +11,43 @@ import android.provider.MediaStore
 import android.widget.Toast
 import androidx.activity.compose.BackHandler
 import androidx.annotation.RequiresApi
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.ime
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -45,9 +62,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.core.content.FileProvider
 import com.google.zxing.WriterException
@@ -60,8 +80,15 @@ import ru.qrefka.qrcodescanner.util.QrEncoder
 import java.io.File
 import java.io.FileOutputStream
 
+/** Buttons are taller than the Material minimum; it suits the roomier layout. */
+private val ActionHeight = 54.dp
+
+/**
+ * @param bottomReserve space the floating tab switcher takes at the bottom of the
+ *   window. It is given back while the keyboard is up, since the switcher hides then.
+ */
 @Composable
-fun GeneratorScreen() {
+fun GeneratorScreen(bottomReserve: Dp = 0.dp) {
     val context = LocalContext.current
     var input by rememberSaveable { mutableStateOf("") }
     var generatedText by rememberSaveable { mutableStateOf<String?>(null) }
@@ -100,133 +127,199 @@ fun GeneratorScreen() {
         }
     }
 
-    if (currentBitmap == null) {
-        Column(
-            Modifier
-                .fillMaxSize()
-                .imePadding()
-                .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            OutlinedTextField(
-                value = input,
-                onValueChange = {
-                    input = it
-                    // Clear a previous "too much text" error.
-                    generatedText = null
-                },
-                label = { Text(stringResource(R.string.enter_text)) },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .weight(1f)
-            )
-            if (error) {
-                Text(
-                    stringResource(R.string.too_much_text),
-                    color = MaterialTheme.colorScheme.error,
-                    textAlign = TextAlign.Center,
-                    modifier = Modifier.fillMaxWidth()
-                )
-            }
-            Button(
-                onClick = generateQr,
-                enabled = input.isNotBlank() && !encoding,
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                // A long payload takes long enough on a slow device that the button
-                // would otherwise look unresponsive: Idle no longer stands in for
-                // "encoding", so the wait can be shown.
-                if (encoding) {
-                    CircularProgressIndicator(
-                        modifier = Modifier.size(20.dp),
-                        strokeWidth = 2.dp,
-                        color = LocalContentColor.current
-                    )
-                } else {
-                    Text(stringResource(R.string.generate))
-                }
-            }
-        }
-    } else {
-        BackHandler {
-            generatedText = null
-        }
+    val imeVisible = WindowInsets.ime.getBottom(LocalDensity.current) > 0
+    val reserve = if (imeVisible) 0.dp else bottomReserve
 
-        Column(
-            Modifier
-                .fillMaxSize()
-                .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
+    AnimatedContent(
+        targetState = currentBitmap,
+        transitionSpec = {
+            (fadeIn(tween(220)) + scaleIn(tween(260), initialScale = 0.94f))
+                .togetherWith(fadeOut(tween(160)))
+        },
+        label = "generatorStage"
+    ) { bitmap ->
+        if (bitmap == null) {
             Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .weight(1f)
-                    .verticalScroll(scrollState),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Center
+                Modifier
+                    .fillMaxSize()
+                    .windowInsetsPadding(WindowInsets.safeDrawing)
+                    .padding(horizontal = 24.dp)
+                    .padding(top = 20.dp, bottom = 20.dp + reserve),
+                verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                Card(
-                    shape = RoundedCornerShape(24.dp),
-                    colors = CardDefaults.cardColors(containerColor = Color.White),
-                    elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
-                    modifier = Modifier.padding(16.dp)
-                ) {
-                    Image(
-                        bitmap = currentBitmap.asImageBitmap(),
-                        contentDescription = stringResource(R.string.qr_content_description),
-                        modifier = Modifier
-                            .size(280.dp)
-                            .padding(16.dp)
-                    )
-                }
-            }
-            Column(
-                verticalArrangement = Arrangement.spacedBy(8.dp),
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                // Saving via MediaStore without WRITE_EXTERNAL_STORAGE needs API 29+.
-                // Older devices are told to use Share rather than left wondering
-                // where the Save button went.
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                    Button(
-                        onClick = {
-                            scope.launch {
-                                val ok = withContext(Dispatchers.IO) {
-                                    saveBitmapToGallery(context, currentBitmap)
-                                }
-                                if (ok) {
-                                    saved = true
-                                } else {
-                                    Toast.makeText(
-                                        context,
-                                        R.string.save_failed,
-                                        Toast.LENGTH_SHORT
-                                    ).show()
-                                }
-                            }
-                        },
-                        modifier = Modifier.fillMaxWidth()
-                    ) { Text(stringResource(if (saved) R.string.saved else R.string.save)) }
-                } else {
+                Text(
+                    stringResource(R.string.generator_title),
+                    style = MaterialTheme.typography.headlineMedium,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+                Text(
+                    stringResource(R.string.generator_subtitle),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                OutlinedTextField(
+                    value = input,
+                    onValueChange = {
+                        input = it
+                        // Clear a previous "too much text" error.
+                        generatedText = null
+                    },
+                    placeholder = { Text(stringResource(R.string.enter_text)) },
+                    shape = MaterialTheme.shapes.medium,
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedContainerColor = MaterialTheme.colorScheme.surfaceContainerLow,
+                        unfocusedContainerColor = MaterialTheme.colorScheme.surfaceContainerLow,
+                        unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant
+                    ),
+                    // Grows with the text instead of claiming the whole screen the
+                    // moment it appears; the button stays pinned to the bottom either
+                    // way, via the spacer below.
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .heightIn(min = 190.dp, max = 420.dp)
+                )
+                Spacer(Modifier.weight(1f))
+                if (error) {
                     Text(
-                        stringResource(R.string.save_unsupported),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        stringResource(R.string.too_much_text),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.error,
                         textAlign = TextAlign.Center,
                         modifier = Modifier.fillMaxWidth()
                     )
                 }
-                OutlinedButton(
-                    onClick = { scope.launch { shareBitmap(context, currentBitmap) } },
-                    modifier = Modifier.fillMaxWidth()
-                ) { Text(stringResource(R.string.share)) }
-                OutlinedButton(
-                    onClick = { generatedText = null },
-                    modifier = Modifier.fillMaxWidth()
-                ) { Text(stringResource(R.string.back)) }
+                Button(
+                    onClick = generateQr,
+                    enabled = input.isNotBlank() && !encoding,
+                    modifier = Modifier.fillMaxWidth().height(ActionHeight)
+                ) {
+                    // A long payload takes long enough on a slow device that the button
+                    // would otherwise look unresponsive: Idle no longer stands in for
+                    // "encoding", so the wait can be shown.
+                    if (encoding) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(20.dp),
+                            strokeWidth = 2.dp,
+                            color = LocalContentColor.current
+                        )
+                    } else {
+                        Text(stringResource(R.string.generate))
+                    }
+                }
             }
+        } else {
+            BackHandler {
+                generatedText = null
+            }
+
+            Column(
+                Modifier
+                    .fillMaxSize()
+                    .windowInsetsPadding(WindowInsets.safeDrawing)
+                    .padding(horizontal = 24.dp)
+                    .padding(top = 12.dp, bottom = 12.dp + bottomReserve),
+                verticalArrangement = Arrangement.spacedBy(12.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .weight(1f)
+                        .verticalScroll(scrollState),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center
+                ) {
+                    // The code itself always sits on white: a tinted or dark card
+                    // behind it is what breaks scanning on other people's phones.
+                    Card(
+                        shape = RoundedCornerShape(32.dp),
+                        colors = CardDefaults.cardColors(containerColor = Color.White),
+                        elevation = CardDefaults.cardElevation(defaultElevation = 10.dp),
+                        modifier = Modifier.padding(vertical = 8.dp)
+                    ) {
+                        Image(
+                            bitmap = bitmap.asImageBitmap(),
+                            contentDescription = stringResource(R.string.qr_content_description),
+                            modifier = Modifier
+                                .size(300.dp)
+                                .padding(24.dp)
+                        )
+                    }
+                    Spacer(Modifier.height(20.dp))
+                    PayloadPreview(generatedText.orEmpty())
+                }
+                Column(
+                    verticalArrangement = Arrangement.spacedBy(10.dp),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    // Saving via MediaStore without WRITE_EXTERNAL_STORAGE needs API 29+.
+                    // Older devices are told to use Share rather than left wondering
+                    // where the Save button went.
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                        Button(
+                            onClick = {
+                                scope.launch {
+                                    val ok = withContext(Dispatchers.IO) {
+                                        saveBitmapToGallery(context, bitmap)
+                                    }
+                                    if (ok) {
+                                        saved = true
+                                    } else {
+                                        Toast.makeText(
+                                            context,
+                                            R.string.save_failed,
+                                            Toast.LENGTH_SHORT
+                                        ).show()
+                                    }
+                                }
+                            },
+                            modifier = Modifier.fillMaxWidth().height(ActionHeight)
+                        ) { Text(stringResource(if (saved) R.string.saved else R.string.save)) }
+                    } else {
+                        Text(
+                            stringResource(R.string.save_unsupported),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            textAlign = TextAlign.Center,
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                    }
+                    FilledTonalButton(
+                        onClick = { scope.launch { shareBitmap(context, bitmap) } },
+                        modifier = Modifier.fillMaxWidth().height(ActionHeight)
+                    ) { Text(stringResource(R.string.share)) }
+                    TextButton(
+                        onClick = { generatedText = null },
+                        modifier = Modifier.fillMaxWidth().height(ActionHeight)
+                    ) { Text(stringResource(R.string.back)) }
+                }
+            }
+        }
+    }
+}
+
+/** A pill under the code echoing what was encoded, so a stale code is obvious. */
+@Composable
+private fun PayloadPreview(text: String) {
+    if (text.isEmpty()) return
+    Box(
+        Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 8.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        Surface(
+            shape = CircleShape,
+            color = MaterialTheme.colorScheme.surfaceContainerHigh
+        ) {
+            Text(
+                text,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.padding(horizontal = 18.dp, vertical = 10.dp)
+            )
         }
     }
 }

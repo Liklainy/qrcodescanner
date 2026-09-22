@@ -5,30 +5,44 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.consumeWindowInsets
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.ime
+import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.windowInsetsPadding
+import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.PrimaryTabRow
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Tab
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.darkColorScheme
-import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveableStateHolder
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.unit.dp
 import ru.qrefka.qrcodescanner.ui.GeneratorScreen
 import ru.qrefka.qrcodescanner.ui.ScannerScreen
+import ru.qrefka.qrcodescanner.ui.theme.QrTheme
 
 class MainActivity : ComponentActivity() {
     private var currentTab by mutableIntStateOf(0)
@@ -50,10 +64,8 @@ class MainActivity : ComponentActivity() {
             savedInstanceState?.getInt(STATE_TAB) ?: 0
         }
         setContent {
-            val dark = isSystemInDarkTheme()
-            val colors = if (dark) DarkColors else LightColors
-            MaterialTheme(colorScheme = colors) {
-                AppScaffold(
+            QrTheme {
+                AppShell(
                     selectedTab = currentTab,
                     onTabSelected = { currentTab = it }
                 )
@@ -91,66 +103,95 @@ class MainActivity : ComponentActivity() {
     }
 }
 
-private val TealPrimary = Color(0xFF00695C)
-private val TealPrimaryDark = Color(0xFF80CBC4)
-private val LightColors = lightColorScheme(
-    primary = TealPrimary,
-    onPrimary = Color.White,
-    primaryContainer = Color(0xFFB2DFDB),
-    onPrimaryContainer = Color(0xFF003C33),
-    secondary = Color(0xFF00897B),
-    onSecondary = Color.White,
-    secondaryContainer = Color(0xFFB2DFDB),
-    tertiary = Color(0xFF26A69A),
-    onTertiary = Color.White,
-    tertiaryContainer = Color(0xFFE0F2F1),
-)
-private val DarkColors = darkColorScheme(
-    primary = TealPrimaryDark,
-    onPrimary = Color(0xFF003C33),
-    primaryContainer = Color(0xFF00504A),
-    onPrimaryContainer = Color(0xFFB2DFDB),
-    secondary = Color(0xFF4DB6AC),
-    onSecondary = Color(0xFF003C33),
-    secondaryContainer = Color(0xFF00504A),
-    tertiary = Color(0xFF80CBC4),
-    onTertiary = Color(0xFF003C33),
-    tertiaryContainer = Color(0xFF004D47),
-)
+/** Vertical space the floating switcher occupies, reserved by the screens below it. */
+private val SwitcherReserve = 84.dp
 
 @Composable
-private fun AppScaffold(selectedTab: Int, onTabSelected: (Int) -> Unit) {
+private fun AppShell(selectedTab: Int, onTabSelected: (Int) -> Unit) {
     val tab = selectedTab.coerceIn(0, 1)
-    Scaffold(
-        topBar = {
-            PrimaryTabRow(
-                selectedTabIndex = tab,
-                modifier = Modifier.statusBarsPadding()
-            ) {
-                Tab(
-                    selected = tab == 0,
-                    onClick = { onTabSelected(0) },
-                    text = { Text(stringResource(R.string.tab_scan)) }
-                )
-                Tab(
-                    selected = tab == 1,
-                    onClick = { onTabSelected(1) },
-                    text = { Text(stringResource(R.string.tab_generate)) }
-                )
+    val density = LocalDensity.current
+    // The switcher floats over the content rather than sitting in a bottomBar, so the
+    // camera can run to all four edges. It steps aside for the keyboard, which would
+    // otherwise shove a pill full of tabs into the middle of the generator screen.
+    val imeVisible = WindowInsets.ime.getBottom(density) > 0
+
+    Box(
+        Modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.background)
+    ) {
+        // Preserves each tab's rememberSaveable state while the other tab is shown.
+        val stateHolder = rememberSaveableStateHolder()
+        when (tab) {
+            0 -> stateHolder.SaveableStateProvider("scan") {
+                ScannerScreen(bottomReserve = SwitcherReserve)
+            }
+
+            else -> stateHolder.SaveableStateProvider("generate") {
+                GeneratorScreen(bottomReserve = SwitcherReserve)
             }
         }
-    ) { padding ->
-        Box(
-            Modifier
-                .fillMaxSize()
-                .padding(padding)
-                .consumeWindowInsets(padding)
+
+        AnimatedVisibility(
+            visible = !imeVisible,
+            enter = fadeIn() + slideInVertically { it },
+            exit = fadeOut() + slideOutVertically { it },
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .windowInsetsPadding(WindowInsets.navigationBars)
+                .padding(bottom = 20.dp)
         ) {
-            // Preserves each tab's rememberSaveable state while the other tab is shown.
-            val stateHolder = rememberSaveableStateHolder()
-            when (tab) {
-                0 -> stateHolder.SaveableStateProvider("scan") { ScannerScreen() }
-                else -> stateHolder.SaveableStateProvider("generate") { GeneratorScreen() }
+            TabSwitcher(selected = tab, onSelect = onTabSelected)
+        }
+    }
+}
+
+/**
+ * A floating pill with a sliding filled indicator, in place of the underlined tab
+ * row. Two destinations do not justify a full navigation bar, and keeping the
+ * control off the top edge leaves the viewfinder the whole screen.
+ */
+@Composable
+private fun TabSwitcher(selected: Int, onSelect: (Int) -> Unit) {
+    val labels = listOf(R.string.tab_scan, R.string.tab_generate)
+    Surface(
+        shape = RoundedCornerShape(percent = 50),
+        color = MaterialTheme.colorScheme.surfaceContainerHighest,
+        shadowElevation = 8.dp,
+        tonalElevation = 3.dp
+    ) {
+        Row(Modifier.padding(5.dp)) {
+            labels.forEachIndexed { index, label ->
+                val active = index == selected
+                val background by animateColorAsState(
+                    if (active) MaterialTheme.colorScheme.primary else Color.Transparent,
+                    animationSpec = tween(220),
+                    label = "tabBackground"
+                )
+                val content by animateColorAsState(
+                    if (active) MaterialTheme.colorScheme.onPrimary
+                    else MaterialTheme.colorScheme.onSurfaceVariant,
+                    animationSpec = tween(220),
+                    label = "tabContent"
+                )
+                Box(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(percent = 50))
+                        .background(background)
+                        .selectable(
+                            selected = active,
+                            role = Role.Tab,
+                            onClick = { onSelect(index) }
+                        )
+                        .padding(horizontal = 26.dp, vertical = 12.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        stringResource(label),
+                        style = MaterialTheme.typography.labelLarge,
+                        color = content
+                    )
+                }
             }
         }
     }

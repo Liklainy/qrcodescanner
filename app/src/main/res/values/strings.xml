@@ -8,7 +8,12 @@
     <string name="copy">Copy</string>
     <string name="copied">Copied ✓</string>
     <string name="dismiss">Dismiss</string>
-    <string name="camera_perm_rationale">Camera access is needed</string>
+    <string name="camera_perm_rationale">Scanning needs the camera. Nothing ever leaves your device.</string>
+    <string name="camera_perm_title">Camera access</string>
+    <string name="result_type_link">Link</string>
+    <string name="result_type_text">Text</string>
+    <string name="generator_title">Create a QR code</string>
+    <string name="generator_subtitle">Type or paste a link, a note, or anything else you want to hand over.</string>
     <string name="grant_camera">Grant camera</string>
     <string name="open_settings">Open settings</string>
     <string name="enter_text">Enter text to encode</string>

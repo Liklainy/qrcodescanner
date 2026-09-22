@@ -31,7 +31,14 @@ import androidx.camera.core.ImageProxy
 import androidx.camera.core.Preview
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.view.PreviewView
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -40,18 +47,28 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
-import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.BottomSheetDefaults
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.ModalBottomSheetProperties
-import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -67,19 +84,22 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.geometry.RoundRect
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.PathFillType
-import androidx.compose.ui.graphics.Shadow
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.drawscope.clipPath
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
-import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.window.SecureFlagPolicy
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
@@ -87,6 +107,10 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import ru.qrefka.qrcodescanner.R
+import ru.qrefka.qrcodescanner.ui.components.LinkGlyph
+import ru.qrefka.qrcodescanner.ui.components.QrMark
+import ru.qrefka.qrcodescanner.ui.components.TextGlyph
+import ru.qrefka.qrcodescanner.ui.components.WifiGlyph
 import ru.qrefka.qrcodescanner.util.WifiCredentials
 import ru.qrefka.qrcodescanner.util.WifiSecurity
 import ru.qrefka.qrcodescanner.util.isOpenableUri
@@ -103,8 +127,12 @@ import java.nio.ByteBuffer
 import java.util.concurrent.Executors
 import java.util.concurrent.atomic.AtomicBoolean
 
+/**
+ * @param bottomReserve space the floating tab switcher takes at the bottom of the
+ *   window; the camera runs underneath it, everything else keeps clear of it.
+ */
 @Composable
-fun ScannerScreen() {
+fun ScannerScreen(bottomReserve: Dp = 0.dp) {
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
     var hasPermission by remember { mutableStateOf(hasCameraPermission(context)) }
@@ -140,8 +168,9 @@ fun ScannerScreen() {
     }
 
     when {
-        hasPermission -> ScannerContent()
+        hasPermission -> ScannerContent(bottomReserve)
         else -> PermissionPrompt(
+            bottomReserve = bottomReserve,
             openSettings = deniedPermanently,
             onRequest = {
                 if (deniedPermanently) {
@@ -164,22 +193,58 @@ private fun hasCameraPermission(context: Context): Boolean =
             PackageManager.PERMISSION_GRANTED
 
 @Composable
-private fun PermissionPrompt(openSettings: Boolean, onRequest: () -> Unit) {
+private fun PermissionPrompt(bottomReserve: Dp, openSettings: Boolean, onRequest: () -> Unit) {
     Column(
-        Modifier.fillMaxSize().padding(24.dp),
+        Modifier
+            .fillMaxSize()
+            .statusBarsPadding()
+            .navigationBarsPadding()
+            .padding(horizontal = 32.dp)
+            .padding(bottom = bottomReserve),
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Text(stringResource(R.string.camera_perm_rationale))
-        Spacer(Modifier.height(16.dp))
-        Button(onClick = onRequest) {
+        Surface(
+            shape = CircleShape,
+            color = MaterialTheme.colorScheme.primaryContainer,
+            modifier = Modifier.size(104.dp)
+        ) {
+            Box(contentAlignment = Alignment.Center) {
+                QrMark(
+                    color = MaterialTheme.colorScheme.onPrimaryContainer,
+                    modifier = Modifier.size(46.dp)
+                )
+            }
+        }
+        Spacer(Modifier.height(28.dp))
+        Text(
+            stringResource(R.string.camera_perm_title),
+            style = MaterialTheme.typography.headlineSmall,
+            color = MaterialTheme.colorScheme.onSurface,
+            textAlign = TextAlign.Center
+        )
+        Spacer(Modifier.height(10.dp))
+        Text(
+            stringResource(R.string.camera_perm_rationale),
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            textAlign = TextAlign.Center
+        )
+        Spacer(Modifier.height(28.dp))
+        Button(
+            onClick = onRequest,
+            modifier = Modifier.fillMaxWidth().height(ActionHeight)
+        ) {
             Text(stringResource(if (openSettings) R.string.open_settings else R.string.grant_camera))
         }
     }
 }
 
+/** Buttons are taller than the Material minimum; it suits the roomier layout. */
+private val ActionHeight = 54.dp
+
 @Composable
-private fun ScannerContent() {
+private fun ScannerContent(bottomReserve: Dp) {
     val context = LocalContext.current
     val haptics = LocalHapticFeedback.current
     var result by rememberSaveable { mutableStateOf<String?>(null) }
@@ -196,7 +261,7 @@ private fun ScannerContent() {
         onDispose { mainHandler.removeCallbacksAndMessages(null) }
     }
 
-    Box(Modifier.fillMaxSize()) {
+    Box(Modifier.fillMaxSize().background(Color.Black)) {
         CameraPreview(
             onDecoded = { decoded ->
                 if (handled.compareAndSet(false, true)) {
@@ -208,21 +273,24 @@ private fun ScannerContent() {
             }
         )
         ViewfinderOverlay()
-        Text(
-            stringResource(R.string.scan_instruction),
-            color = Color.White,
-            style = MaterialTheme.typography.bodyLarge.copy(
-                fontWeight = FontWeight.Medium,
-                shadow = Shadow(
-                    color = Color.Black.copy(alpha = 0.6f),
-                    offset = Offset(0f, 1f),
-                    blurRadius = 4f
-                )
-            ),
+        // A pill reads over a moving camera image far better than text with a drop
+        // shadow, and parking it above the tab switcher keeps the viewfinder clear.
+        Surface(
+            shape = CircleShape,
+            color = Color.Black.copy(alpha = 0.55f),
             modifier = Modifier
-                .align(Alignment.Center)
-                .offset(y = 155.dp)
-        )
+                .align(Alignment.BottomCenter)
+                .navigationBarsPadding()
+                .padding(bottom = bottomReserve + 14.dp)
+                .padding(horizontal = 24.dp)
+        ) {
+            Text(
+                stringResource(R.string.scan_instruction),
+                color = Color.White,
+                style = MaterialTheme.typography.labelLarge,
+                modifier = Modifier.padding(horizontal = 20.dp, vertical = 12.dp)
+            )
+        }
     }
 
     result?.let { text ->
@@ -315,25 +383,65 @@ private fun CameraPreview(onDecoded: (String) -> Unit) {
 @Composable
 private fun ViewfinderOverlay() {
     val bracketColor = MaterialTheme.colorScheme.primary
+    // A slow sweep across the cutout, so the viewfinder looks alive while it waits.
+    val sweep = rememberInfiniteTransition(label = "viewfinder").animateFloat(
+        initialValue = 0f,
+        targetValue = 1f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(durationMillis = 2600, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "sweep"
+    )
     Canvas(modifier = Modifier.fillMaxSize()) {
-        val viewfinderSize = 260.dp.toPx()
+        // Scales with the window instead of a fixed 260dp, so the cutout stays
+        // proportionate on a tablet and does not crowd the edges on a small phone.
+        val viewfinderSize = (size.minDimension * 0.7f).coerceAtMost(340.dp.toPx())
         val cx = size.width / 2
         val cy = size.height / 2
         val left = cx - viewfinderSize / 2
         val top = cy - viewfinderSize / 2
         val right = cx + viewfinderSize / 2
         val bottom = cy + viewfinderSize / 2
-        val cr = 16.dp.toPx()
-        val bl = 40.dp.toPx()
+        val cr = 30.dp.toPx()
+        val bl = 44.dp.toPx()
         val bw = 4.dp.toPx()
+
+        val cutout = RoundRect(left, top, right, bottom, cr, cr)
 
         // Semi-transparent mask with rounded cutout
         val maskPath = Path().apply {
             addRect(Rect(0f, 0f, size.width, size.height))
-            addRoundRect(RoundRect(left, top, right, bottom, cr, cr))
+            addRoundRect(cutout)
             fillType = PathFillType.EvenOdd
         }
-        drawPath(maskPath, color = Color.Black.copy(alpha = 0.5f))
+        drawPath(maskPath, color = Color.Black.copy(alpha = 0.55f))
+
+        // Sweeping band, clipped to the cutout so it never bleeds onto the mask.
+        val cutoutPath = Path().apply { addRoundRect(cutout) }
+        clipPath(cutoutPath) {
+            val band = 150.dp.toPx()
+            val centerY = top + (bottom - top) * sweep.value
+            drawRect(
+                brush = Brush.verticalGradient(
+                    colors = listOf(
+                        Color.Transparent,
+                        bracketColor.copy(alpha = 0.30f),
+                        Color.Transparent
+                    ),
+                    startY = centerY - band / 2,
+                    endY = centerY + band / 2
+                ),
+                topLeft = Offset(left, centerY - band / 2),
+                size = Size(right - left, band)
+            )
+            drawLine(
+                color = bracketColor.copy(alpha = 0.85f),
+                start = Offset(left, centerY),
+                end = Offset(right, centerY),
+                strokeWidth = 2.dp.toPx()
+            )
+        }
 
         // Corner brackets following the rounded cutout
         val bracketPath = Path().apply {
@@ -413,6 +521,9 @@ private class QrAnalyzer(
 }
 
 
+/** What a decoded payload turned out to be; drives the sheet's badge and heading. */
+private enum class ResultKind { WIFI, LINK, TEXT }
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 internal fun ResultSheet(
@@ -429,9 +540,17 @@ internal fun ResultSheet(
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     // True only on the manual path, which is the one that renders the password.
     val showsPassword = wifi != null && !canAddNetwork && wifi.password.isNotEmpty()
+    val isLink = remember(text) { isOpenableUri(text) }
+    val kind = when {
+        wifi != null -> ResultKind.WIFI
+        isLink -> ResultKind.LINK
+        else -> ResultKind.TEXT
+    }
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = sheetState,
+        containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
+        dragHandle = { BottomSheetDefaults.DragHandle() },
         // The sheet is its own dialog window, so FLAG_SECURE has to be set here -
         // setting it on the activity window would leave this content uncovered.
         // It keeps the password out of screenshots and recents task snapshots.
@@ -441,35 +560,28 @@ internal fun ResultSheet(
         )
     ) {
         Column(
-            Modifier.fillMaxWidth().padding(16.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
+            Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 24.dp)
+                .padding(top = 4.dp, bottom = 28.dp)
         ) {
+            ResultHeader(kind)
+            Spacer(Modifier.height(20.dp))
             if (wifi != null) {
                 WifiDetails(wifi, canAddNetwork)
             } else {
-                val scrollState = rememberScrollState()
-                SelectionContainer {
-                    Text(
-                        text,
-                        color = MaterialTheme.colorScheme.onSurface,
-                        fontFamily = FontFamily.Monospace,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .heightIn(max = 320.dp)
-                            .verticalScroll(scrollState)
-                    )
-                }
+                PayloadCard(text)
             }
-            Spacer(Modifier.height(16.dp))
+            Spacer(Modifier.height(24.dp))
             Column(
-                verticalArrangement = Arrangement.spacedBy(8.dp),
+                verticalArrangement = Arrangement.spacedBy(10.dp),
                 modifier = Modifier.fillMaxWidth()
             ) {
                 if (wifi != null) {
                     if (canAddNetwork) {
                         Button(
                             onClick = onConnectWifi,
-                            modifier = Modifier.fillMaxWidth()
+                            modifier = Modifier.fillMaxWidth().height(ActionHeight)
                         ) { Text(stringResource(R.string.wifi_connect)) }
                     }
                     if (wifi.password.isNotEmpty()) {
@@ -480,16 +592,16 @@ internal fun ResultSheet(
                         )
                     }
                     if (!canAddNetwork) {
-                        OutlinedButton(
+                        FilledTonalButton(
                             onClick = onOpenWifiSettings,
-                            modifier = Modifier.fillMaxWidth()
+                            modifier = Modifier.fillMaxWidth().height(ActionHeight)
                         ) { Text(stringResource(R.string.wifi_open_settings)) }
                     }
                 } else {
-                    if (isOpenableUri(text)) {
+                    if (isLink) {
                         Button(
                             onClick = onOpenLink,
-                            modifier = Modifier.fillMaxWidth()
+                            modifier = Modifier.fillMaxWidth().height(ActionHeight)
                         ) { Text(stringResource(R.string.open)) }
                     }
                     CopyButton(
@@ -498,32 +610,83 @@ internal fun ResultSheet(
                         onCopy = onCopy
                     )
                 }
-                OutlinedButton(
+                TextButton(
                     onClick = onDismiss,
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier.fillMaxWidth().height(ActionHeight)
                 ) { Text(stringResource(R.string.dismiss)) }
             }
         }
     }
 }
 
+/** Tinted badge plus a plain-language name for what was scanned. */
+@Composable
+private fun ResultHeader(kind: ResultKind) {
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        Surface(
+            shape = CircleShape,
+            color = MaterialTheme.colorScheme.primaryContainer,
+            modifier = Modifier.size(44.dp)
+        ) {
+            Box(contentAlignment = Alignment.Center) {
+                val tint = MaterialTheme.colorScheme.onPrimaryContainer
+                val glyph = Modifier.size(21.dp)
+                when (kind) {
+                    ResultKind.WIFI -> WifiGlyph(tint, glyph)
+                    ResultKind.LINK -> LinkGlyph(tint, glyph)
+                    ResultKind.TEXT -> TextGlyph(tint, glyph)
+                }
+            }
+        }
+        Spacer(Modifier.width(14.dp))
+        Text(
+            stringResource(
+                when (kind) {
+                    ResultKind.WIFI -> R.string.wifi_network
+                    ResultKind.LINK -> R.string.result_type_link
+                    ResultKind.TEXT -> R.string.result_type_text
+                }
+            ),
+            style = MaterialTheme.typography.titleMedium,
+            color = MaterialTheme.colorScheme.onSurface
+        )
+    }
+}
+
+/** The raw payload, in a tonal card that scrolls once it outgrows its box. */
+@Composable
+private fun PayloadCard(text: String) {
+    val scrollState = rememberScrollState()
+    Surface(
+        shape = MaterialTheme.shapes.medium,
+        color = MaterialTheme.colorScheme.surfaceContainerHighest,
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        SelectionContainer {
+            Text(
+                text,
+                color = MaterialTheme.colorScheme.onSurface,
+                style = MaterialTheme.typography.bodyMedium,
+                fontFamily = FontFamily.Monospace,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .heightIn(max = 300.dp)
+                    .verticalScroll(scrollState)
+                    .padding(18.dp)
+            )
+        }
+    }
+}
+
 /**
  * Summary of a scanned `WIFI:` payload. The password is shown only when the network
- * has to be added by hand — otherwise the system dialog takes it and there is no
+ * has to be added by hand - otherwise the system dialog takes it and there is no
  * reason to put it on screen.
  */
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun WifiDetails(wifi: WifiCredentials, canAddNetwork: Boolean) {
-    Column(
-        Modifier.fillMaxWidth(),
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        Text(
-            stringResource(R.string.wifi_network),
-            style = MaterialTheme.typography.labelMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
-        Spacer(Modifier.height(4.dp))
+    Column(Modifier.fillMaxWidth()) {
         SelectionContainer {
             Text(
                 wifi.ssid,
@@ -531,25 +694,17 @@ private fun WifiDetails(wifi: WifiCredentials, canAddNetwork: Boolean) {
                 color = MaterialTheme.colorScheme.onSurface
             )
         }
-        Spacer(Modifier.height(4.dp))
-        Text(
-            buildString {
-                append(stringResource(securityLabel(wifi.security)))
-                if (wifi.hidden) append(" \u00b7 ").append(stringResource(R.string.wifi_hidden))
-            },
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
+        Spacer(Modifier.height(12.dp))
+        // FlowRow, not Row: a long security name next to "Hidden network" overflows
+        // a narrow screen in some locales.
+        FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            InfoChip(stringResource(securityLabel(wifi.security)))
+            if (wifi.hidden) InfoChip(stringResource(R.string.wifi_hidden))
+        }
         if (!canAddNetwork) {
             if (wifi.password.isNotEmpty()) {
-                Spacer(Modifier.height(12.dp))
-                SelectionContainer {
-                    Text(
-                        wifi.password,
-                        color = MaterialTheme.colorScheme.onSurface,
-                        fontFamily = FontFamily.Monospace
-                    )
-                }
+                Spacer(Modifier.height(16.dp))
+                PayloadCard(wifi.password)
             }
             Spacer(Modifier.height(12.dp))
             Text(
@@ -558,6 +713,21 @@ private fun WifiDetails(wifi: WifiCredentials, canAddNetwork: Boolean) {
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
+    }
+}
+
+@Composable
+private fun InfoChip(label: String) {
+    Surface(
+        shape = CircleShape,
+        color = MaterialTheme.colorScheme.secondaryContainer
+    ) {
+        Text(
+            label,
+            style = MaterialTheme.typography.labelMedium,
+            color = MaterialTheme.colorScheme.onSecondaryContainer,
+            modifier = Modifier.padding(horizontal = 14.dp, vertical = 7.dp)
+        )
     }
 }
 
@@ -575,12 +745,12 @@ private fun CopyButton(
             copied = false
         }
     }
-    OutlinedButton(
+    FilledTonalButton(
         onClick = {
             onCopy()
             copied = true
         },
-        modifier = Modifier.fillMaxWidth()
+        modifier = Modifier.fillMaxWidth().height(ActionHeight)
     ) { Text(stringResource(if (copied) confirmation else label)) }
 }
 

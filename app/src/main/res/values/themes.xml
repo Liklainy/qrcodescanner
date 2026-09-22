@@ -1,6 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <!--
+      Only ever seen during the cold-start window before Compose draws. Painting it
+      the same colour as the Compose background (see ui/theme/Color.kt) keeps the
+      launch from flashing white on dark or grey on light.
+    -->
     <style name="Theme.QRCodeApp" parent="android:Theme.Material.Light.NoActionBar">
         <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:navigationBarColor">@android:color/transparent</item>
+        <item name="android:windowBackground">@color/window_background</item>
     </style>
 </resources>
