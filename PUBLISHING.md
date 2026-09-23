@@ -72,7 +72,7 @@ build — AppGallery rejects a duplicate. Either edit the file or pass it in:
    (`short_description.txt` is the app introduction, `full_description.txt` the
    description), for the Russian locale from `ru-RU/`, and for Simplified Chinese
    (required when the release regions include the Chinese mainland) from `zh-CN/`.
-5. App information → upload the four screenshots from
+5. App information → upload the seven screenshots from
    `fastlane/metadata/huawei/images/phoneScreenshots/` (450x800, the size the
    console accepts; see [Screenshots](#screenshots) below).
 6. Release → Version information → upload the signed APK → fill release notes
@@ -102,17 +102,19 @@ aspect ratio. The store-ready files live in
 `fastlane/metadata/huawei/images/phoneScreenshots/`; the untouched captures are
 kept beside them in `phoneScreenshots-original/`.
 
-To convert a new capture (macOS `sips`, no extra tools): crop away the status and
-navigation bars, pad the sides out to 9:16 in the app's teal, then scale down.
+To convert a new capture (macOS `sips`, no extra tools): crop away the status bar
+and the gesture handle, pad the sides out to 9:16 in the app's teal (`#00807A`,
+the theme's primary), then scale down.
 
 ```sh
-sips --cropOffset 100 0 --cropToHeightWidth 2180 1080 shot.png --out /tmp/c.png
-sips --padToHeightWidth 2180 1226 --padColor 00695C /tmp/c.png --out /tmp/p.png
+sips --cropOffset 100 0 --cropToHeightWidth 2240 1080 shot.png --out /tmp/c.png
+sips --padToHeightWidth 2240 1260 --padColor 00807A /tmp/c.png --out /tmp/p.png
 sips -z 800 450 /tmp/p.png --out phoneScreenshots/shot.png
 ```
 
-The crop offsets suit a 1080x2400 Samsung capture; check the result if the phone
-has differently sized bars. Screenshots must show what the app really does — the
+The crop offsets suit a 1080x2400 capture with gesture navigation (the
+`Medium_Phone` emulator, with the demo-mode status bar); check the result if the
+phone has differently sized bars. Screenshots must show what the app really does — the
 scanner shot needs a real code visible in the viewfinder, not a blank preview.
 
 ## Project site (GitHub Pages)
