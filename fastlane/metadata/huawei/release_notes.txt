@@ -1,7 +1,8 @@
 First release.
 
-- Scan QR codes with the camera, then open or copy the result.
-- Wi-Fi codes are handed to the system add-network dialog.
+- Scan QR codes and barcodes (QR, Data Matrix, Aztec, PDF417, EAN, UPC, Code 128/39/93, ITF, Codabar) with the camera or from an image in the gallery.
+- Flashlight and pinch-to-zoom in the scanner.
+- Smart actions: call a number, add a contact or calendar event, write an email or SMS, show a location on a map, search for a product, add a Wi-Fi network.
 - Create a QR code from any text and save or share it.
 - Start a scan from the Quick Settings tile.
 - Works offline; the camera is the only permission.

@@ -17,7 +17,7 @@ import androidx.compose.runtime.Composable
 /**
  * The handful of marks this app needs, drawn with the Canvas primitives rather than
  * pulled from material-icons-extended - that artifact would add far more to the APK
- * than four glyphs are worth, and the geometry here is simple enough to state
+ * than a dozen glyphs are worth, and the geometry here is simple enough to state
  * directly. Everything is laid out in a 0..1 square and scaled to whatever size the
  * caller gives the modifier.
  */
@@ -144,4 +144,207 @@ private fun DrawScope.drawRule(color: Color, y: Float, x: Float, width: Float) {
         size = Size(width, thickness),
         cornerRadius = CornerRadius(thickness / 2)
     )
+}
+
+private fun DrawScope.lineStroke() = Stroke(
+    width = 0.1f * size.minDimension,
+    cap = StrokeCap.Round,
+    join = StrokeJoin.Round
+)
+
+/** A picture frame with a mountain and a sun: "pick an image". */
+@Composable
+internal fun ImageGlyph(color: Color, modifier: Modifier = Modifier) {
+    Canvas(modifier) {
+        val u = size.minDimension
+        val stroke = lineStroke()
+        drawRoundRect(
+            color = color,
+            topLeft = Offset(0.08f * u, 0.14f * u),
+            size = Size(0.84f * u, 0.72f * u),
+            cornerRadius = CornerRadius(0.14f * u),
+            style = stroke
+        )
+        val mountain = Path().apply {
+            moveTo(0.18f * u, 0.72f * u)
+            lineTo(0.42f * u, 0.46f * u)
+            lineTo(0.58f * u, 0.62f * u)
+            lineTo(0.66f * u, 0.54f * u)
+            lineTo(0.82f * u, 0.72f * u)
+        }
+        drawPath(mountain, color = color, style = stroke)
+        drawCircle(color, radius = 0.07f * u, center = Offset(0.66f * u, 0.34f * u))
+    }
+}
+
+/** A circled "i", for the privacy and about entry. */
+@Composable
+internal fun InfoGlyph(color: Color, modifier: Modifier = Modifier) {
+    Canvas(modifier) {
+        val u = size.minDimension
+        val stroke = lineStroke()
+        drawCircle(color, radius = 0.42f * u, center = Offset(0.5f * u, 0.5f * u), style = stroke)
+        drawCircle(color, radius = 0.065f * u, center = Offset(0.5f * u, 0.3f * u))
+        drawLine(
+            color,
+            start = Offset(0.5f * u, 0.46f * u),
+            end = Offset(0.5f * u, 0.72f * u),
+            strokeWidth = stroke.width,
+            cap = StrokeCap.Round
+        )
+    }
+}
+
+/** A lightning bolt, for the torch. [filled] shows it lit. */
+@Composable
+internal fun FlashGlyph(color: Color, filled: Boolean, modifier: Modifier = Modifier) {
+    Canvas(modifier) {
+        val u = size.minDimension
+        val bolt = Path().apply {
+            moveTo(0.58f * u, 0.06f * u)
+            lineTo(0.2f * u, 0.56f * u)
+            lineTo(0.48f * u, 0.56f * u)
+            lineTo(0.42f * u, 0.94f * u)
+            lineTo(0.8f * u, 0.44f * u)
+            lineTo(0.52f * u, 0.44f * u)
+            close()
+        }
+        if (filled) drawPath(bolt, color = color)
+        drawPath(bolt, color = color, style = lineStroke())
+    }
+}
+
+/** A handset seen from the front: a phone number. */
+@Composable
+internal fun PhoneGlyph(color: Color, modifier: Modifier = Modifier) {
+    Canvas(modifier) {
+        val u = size.minDimension
+        drawRoundRect(
+            color = color,
+            topLeft = Offset(0.24f * u, 0.06f * u),
+            size = Size(0.52f * u, 0.88f * u),
+            cornerRadius = CornerRadius(0.12f * u),
+            style = lineStroke()
+        )
+        drawRule(color, 0.78f * u, 0.42f * u, 0.16f * u)
+    }
+}
+
+/** A speech bubble: a text message. */
+@Composable
+internal fun MessageGlyph(color: Color, modifier: Modifier = Modifier) {
+    Canvas(modifier) {
+        val u = size.minDimension
+        val r = 0.16f * u
+        val left = 0.08f * u
+        val top = 0.12f * u
+        val right = 0.92f * u
+        val bottom = 0.7f * u
+        val bubble = Path().apply {
+            moveTo(0.3f * u, bottom)
+            lineTo(left + r, bottom)
+            arcTo(Rect(left, bottom - 2 * r, left + 2 * r, bottom), 90f, 90f, false)
+            lineTo(left, top + r)
+            arcTo(Rect(left, top, left + 2 * r, top + 2 * r), 180f, 90f, false)
+            lineTo(right - r, top)
+            arcTo(Rect(right - 2 * r, top, right, top + 2 * r), 270f, 90f, false)
+            lineTo(right, bottom - r)
+            arcTo(Rect(right - 2 * r, bottom - 2 * r, right, bottom), 0f, 90f, false)
+            lineTo(0.5f * u, bottom)
+            lineTo(0.3f * u, 0.9f * u)
+            close()
+        }
+        drawPath(bubble, color = color, style = lineStroke())
+    }
+}
+
+/** An envelope: an email. */
+@Composable
+internal fun MailGlyph(color: Color, modifier: Modifier = Modifier) {
+    Canvas(modifier) {
+        val u = size.minDimension
+        val stroke = lineStroke()
+        drawRoundRect(
+            color = color,
+            topLeft = Offset(0.06f * u, 0.18f * u),
+            size = Size(0.88f * u, 0.64f * u),
+            cornerRadius = CornerRadius(0.1f * u),
+            style = stroke
+        )
+        val flap = Path().apply {
+            moveTo(0.14f * u, 0.3f * u)
+            lineTo(0.5f * u, 0.56f * u)
+            lineTo(0.86f * u, 0.3f * u)
+        }
+        drawPath(flap, color = color, style = stroke)
+    }
+}
+
+/** A map pin: a location. */
+@Composable
+internal fun PinGlyph(color: Color, modifier: Modifier = Modifier) {
+    Canvas(modifier) {
+        val u = size.minDimension
+        val pin = Path().apply {
+            moveTo(0.5f * u, 0.94f * u)
+            lineTo(0.24f * u, 0.56f * u)
+            arcTo(Rect(0.18f * u, 0.06f * u, 0.82f * u, 0.7f * u), 146f, 248f, false)
+            close()
+        }
+        drawPath(pin, color = color, style = lineStroke())
+        drawCircle(color, radius = 0.1f * u, center = Offset(0.5f * u, 0.38f * u))
+    }
+}
+
+/** Head and shoulders: a contact card. */
+@Composable
+internal fun PersonGlyph(color: Color, modifier: Modifier = Modifier) {
+    Canvas(modifier) {
+        val u = size.minDimension
+        val stroke = lineStroke()
+        drawCircle(color, radius = 0.19f * u, center = Offset(0.5f * u, 0.3f * u), style = stroke)
+        drawArc(
+            color = color,
+            startAngle = 180f,
+            sweepAngle = 180f,
+            useCenter = false,
+            topLeft = Offset(0.14f * u, 0.62f * u),
+            size = Size(0.72f * u, 0.6f * u),
+            style = stroke
+        )
+    }
+}
+
+/** A calendar page with binder rings: an event. */
+@Composable
+internal fun CalendarGlyph(color: Color, modifier: Modifier = Modifier) {
+    Canvas(modifier) {
+        val u = size.minDimension
+        val stroke = lineStroke()
+        drawRoundRect(
+            color = color,
+            topLeft = Offset(0.08f * u, 0.16f * u),
+            size = Size(0.84f * u, 0.76f * u),
+            cornerRadius = CornerRadius(0.12f * u),
+            style = stroke
+        )
+        drawRule(color, 0.4f * u, 0.08f * u, 0.84f * u)
+        listOf(0.32f, 0.68f).forEach { x ->
+            drawLine(color, Offset(x * u, 0.06f * u), Offset(x * u, 0.24f * u), stroke.width, StrokeCap.Round)
+        }
+    }
+}
+
+/** Vertical bars of uneven width: a linear barcode. */
+@Composable
+internal fun BarcodeGlyph(color: Color, modifier: Modifier = Modifier) {
+    Canvas(modifier) {
+        val u = size.minDimension
+        listOf(
+            0.08f to 0.08f, 0.22f to 0.05f, 0.33f to 0.11f, 0.5f to 0.05f,
+            0.61f to 0.08f, 0.75f to 0.05f, 0.86f to 0.08f
+        ).forEach { (x, width) ->
+            drawRect(color, Offset(x * u, 0.16f * u), Size(width * u, 0.68f * u))
+        }
+    }
 }

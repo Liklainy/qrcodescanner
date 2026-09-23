@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Generate the QR Scanner launcher icon assets from one geometry definition.
+"""Generate the QRefka Scan launcher icon assets from one geometry definition.
 
 Run from anywhere:  python3 tools/generate_icons.py   (no dependencies)
 

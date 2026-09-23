@@ -23,14 +23,19 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.WindowInsetsSides
+import androidx.compose.foundation.layout.add
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.ime
+import androidx.compose.foundation.layout.navigationBars
+import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.union
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
@@ -62,7 +67,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
@@ -76,6 +80,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import ru.qrefka.qrcodescanner.R
+import ru.qrefka.qrcodescanner.ui.components.FillScrollColumn
 import ru.qrefka.qrcodescanner.util.QrEncoder
 import java.io.File
 import java.io.FileOutputStream
@@ -95,6 +100,7 @@ fun GeneratorScreen(bottomReserve: Dp = 0.dp) {
     var saved by remember { mutableStateOf(false) }
     val keyboard = LocalSoftwareKeyboardController.current
     val scrollState = rememberScrollState()
+    val inputScrollState = rememberScrollState()
     val scope = rememberCoroutineScope()
     // Offload encode point to Dispatchers.Default so the UI thread doesn't block
     val generationState by produceState<GenerationState>(
@@ -127,8 +133,17 @@ fun GeneratorScreen(bottomReserve: Dp = 0.dp) {
         }
     }
 
-    val imeVisible = WindowInsets.ime.getBottom(LocalDensity.current) > 0
-    val reserve = if (imeVisible) 0.dp else bottomReserve
+    // The keyboard and the tab switcher never show together, so the bottom inset is
+    // whichever is taller rather than their sum. Taking the max keeps the padding
+    // continuous while the keyboard animates: it follows the keyboard down until it
+    // meets the switcher's reserve and then holds, where swapping one for the other
+    // on a visibility flag made the whole layout jump by the reserve in one frame.
+    val bottomInsets = WindowInsets.navigationBars
+        .add(WindowInsets(bottom = bottomReserve))
+        .union(WindowInsets.ime)
+        .only(WindowInsetsSides.Bottom)
+    val otherInsets = WindowInsets.safeDrawing
+        .only(WindowInsetsSides.Horizontal + WindowInsetsSides.Top)
 
     AnimatedContent(
         targetState = currentBitmap,
@@ -139,12 +154,14 @@ fun GeneratorScreen(bottomReserve: Dp = 0.dp) {
         label = "generatorStage"
     ) { bitmap ->
         if (bitmap == null) {
-            Column(
+            FillScrollColumn(
                 Modifier
                     .fillMaxSize()
-                    .windowInsetsPadding(WindowInsets.safeDrawing)
+                    .windowInsetsPadding(otherInsets)
+                    .windowInsetsPadding(bottomInsets)
                     .padding(horizontal = 24.dp)
-                    .padding(top = 20.dp, bottom = 20.dp + reserve),
+                    .padding(vertical = 20.dp),
+                scrollState = inputScrollState,
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
                 Text(
@@ -173,7 +190,8 @@ fun GeneratorScreen(bottomReserve: Dp = 0.dp) {
                     ),
                     // Grows with the text instead of claiming the whole screen the
                     // moment it appears; the button stays pinned to the bottom either
-                    // way, via the spacer below.
+                    // way, via the spacer below. Where the minimum does not fit, the
+                    // column scrolls rather than hiding the button.
                     modifier = Modifier
                         .fillMaxWidth()
                         .heightIn(min = 190.dp, max = 420.dp)
@@ -215,9 +233,10 @@ fun GeneratorScreen(bottomReserve: Dp = 0.dp) {
             Column(
                 Modifier
                     .fillMaxSize()
-                    .windowInsetsPadding(WindowInsets.safeDrawing)
+                    .windowInsetsPadding(otherInsets)
+                    .windowInsetsPadding(bottomInsets)
                     .padding(horizontal = 24.dp)
-                    .padding(top = 12.dp, bottom = 12.dp + bottomReserve),
+                    .padding(vertical = 12.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
@@ -386,7 +405,7 @@ private fun saveBitmapToGallery(context: Context, bitmap: Bitmap): Boolean {
             put(MediaStore.Images.Media.MIME_TYPE, "image/png")
             put(
                 MediaStore.Images.Media.RELATIVE_PATH,
-                "${Environment.DIRECTORY_PICTURES}/QR Scanner"
+                "${Environment.DIRECTORY_PICTURES}/QRefka Scan"
             )
             put(MediaStore.Images.Media.IS_PENDING, 1)
         }

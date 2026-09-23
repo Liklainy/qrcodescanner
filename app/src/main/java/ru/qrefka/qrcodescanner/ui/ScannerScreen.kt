@@ -22,13 +22,17 @@ import android.view.ViewGroup
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.ManagedActivityResultLauncher
 import androidx.activity.result.ActivityResult
+import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.RequiresApi
 import androidx.annotation.StringRes
+import androidx.camera.core.Camera
 import androidx.camera.core.CameraSelector
 import androidx.camera.core.ImageAnalysis
 import androidx.camera.core.ImageProxy
 import androidx.camera.core.Preview
+import androidx.camera.core.TorchState
+import androidx.camera.core.ZoomState
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.view.PreviewView
 import androidx.compose.animation.core.FastOutSlowInEasing
@@ -39,6 +43,8 @@ import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
+import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.gestures.detectTransformGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -76,6 +82,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
@@ -93,9 +100,13 @@ import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.clipPath
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.window.SecureFlagPolicy
@@ -105,24 +116,44 @@ import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.Observer
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import ru.qrefka.qrcodescanner.R
+import ru.qrefka.qrcodescanner.ui.components.FillScrollColumn
 import ru.qrefka.qrcodescanner.ui.components.LinkGlyph
 import ru.qrefka.qrcodescanner.ui.components.QrMark
 import ru.qrefka.qrcodescanner.ui.components.TextGlyph
 import ru.qrefka.qrcodescanner.ui.components.WifiGlyph
+import ru.qrefka.qrcodescanner.ui.components.BarcodeGlyph
+import ru.qrefka.qrcodescanner.ui.components.CalendarGlyph
+import ru.qrefka.qrcodescanner.ui.components.FlashGlyph
+import ru.qrefka.qrcodescanner.ui.components.ImageGlyph
+import ru.qrefka.qrcodescanner.ui.components.MailGlyph
+import ru.qrefka.qrcodescanner.ui.components.MessageGlyph
+import ru.qrefka.qrcodescanner.ui.components.PersonGlyph
+import ru.qrefka.qrcodescanner.ui.components.PhoneGlyph
+import ru.qrefka.qrcodescanner.ui.components.PinGlyph
+import ru.qrefka.qrcodescanner.util.LINEAR_FORMATS
+import ru.qrefka.qrcodescanner.util.SCAN_FORMATS
+import ru.qrefka.qrcodescanner.util.ScanContent
 import ru.qrefka.qrcodescanner.util.WifiCredentials
 import ru.qrefka.qrcodescanner.util.WifiSecurity
-import ru.qrefka.qrcodescanner.util.isOpenableUri
-import ru.qrefka.qrcodescanner.util.parseWifiQr
+import ru.qrefka.qrcodescanner.util.decodeImage
+import ru.qrefka.qrcodescanner.util.formatLabel
+import ru.qrefka.qrcodescanner.util.isProductFormat
+import ru.qrefka.qrcodescanner.util.parseScanContent
 import com.google.zxing.BarcodeFormat
+import com.google.zxing.Result
 import com.google.zxing.BinaryBitmap
 import com.google.zxing.DecodeHintType
 import com.google.zxing.MultiFormatReader
 import com.google.zxing.NotFoundException
 import com.google.zxing.PlanarYUVLuminanceSource
 import com.google.zxing.common.HybridBinarizer
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.nio.ByteBuffer
 import java.util.concurrent.Executors
 import java.util.concurrent.atomic.AtomicBoolean
@@ -167,11 +198,49 @@ fun ScannerScreen(bottomReserve: Dp = 0.dp) {
         onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
     }
 
+    // The result lives here rather than with the camera so that a code picked from
+    // the gallery shows up even when camera access was refused.
+    var result by rememberSaveable { mutableStateOf<String?>(null) }
+    var resultFormat by rememberSaveable { mutableStateOf<String?>(null) }
+    // Claimed on the analyzer thread by the first decode and released when the sheet
+    // is dismissed. The camera stays bound while the sheet is up, so without this a
+    // code left in frame would post a Runnable per frame for nothing. Seeded from
+    // [result] because that survives a tab switch while this flag does not.
+    val handled = remember { AtomicBoolean(result != null) }
+    val showResult: (Result) -> Unit = {
+        handled.set(true)
+        result = it.text
+        resultFormat = it.barcodeFormat.name
+    }
+
+    val scope = rememberCoroutineScope()
+    // The photo picker needs no storage permission; where it is unavailable the
+    // contract falls back to the system document picker, which needs none either.
+    val imagePicker = rememberLauncherForActivityResult(
+        ActivityResultContracts.PickVisualMedia()
+    ) { uri ->
+        if (uri == null) return@rememberLauncherForActivityResult
+        val appContext = context.applicationContext
+        scope.launch {
+            val decoded = withContext(Dispatchers.Default) { decodeImage(appContext, uri) }
+            if (decoded != null) showResult(decoded) else toast(context, R.string.no_code_in_image)
+        }
+    }
+    val pickImage = {
+        imagePicker.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
+    }
+
     when {
-        hasPermission -> ScannerContent(bottomReserve)
+        hasPermission -> ScannerContent(
+            bottomReserve = bottomReserve,
+            handled = handled,
+            onDecoded = showResult,
+            onPickImage = pickImage
+        )
         else -> PermissionPrompt(
             bottomReserve = bottomReserve,
             openSettings = deniedPermanently,
+            onPickImage = pickImage,
             onRequest = {
                 if (deniedPermanently) {
                     context.startActivity(
@@ -186,6 +255,18 @@ fun ScannerScreen(bottomReserve: Dp = 0.dp) {
             }
         )
     }
+
+    result?.let { text ->
+        ResultSheet(
+            text = text,
+            format = resultFormat?.let { runCatching { BarcodeFormat.valueOf(it) }.getOrNull() },
+            onDismiss = {
+                result = null
+                resultFormat = null
+                handled.set(false)
+            }
+        )
+    }
 }
 
 private fun hasCameraPermission(context: Context): Boolean =
@@ -193,8 +274,15 @@ private fun hasCameraPermission(context: Context): Boolean =
             PackageManager.PERMISSION_GRANTED
 
 @Composable
-private fun PermissionPrompt(bottomReserve: Dp, openSettings: Boolean, onRequest: () -> Unit) {
-    Column(
+private fun PermissionPrompt(
+    bottomReserve: Dp,
+    openSettings: Boolean,
+    onPickImage: () -> Unit,
+    onRequest: () -> Unit
+) {
+    // Scrolls where the prompt is taller than the space above the tab switcher
+    // (landscape, large fonts) instead of spilling past both edges.
+    FillScrollColumn(
         Modifier
             .fillMaxSize()
             .statusBarsPadding()
@@ -237,6 +325,12 @@ private fun PermissionPrompt(bottomReserve: Dp, openSettings: Boolean, onRequest
         ) {
             Text(stringResource(if (openSettings) R.string.open_settings else R.string.grant_camera))
         }
+        Spacer(Modifier.height(10.dp))
+        // Reading a saved image needs no camera, so it stays on offer without access.
+        FilledTonalButton(
+            onClick = onPickImage,
+            modifier = Modifier.fillMaxWidth().height(ActionHeight)
+        ) { Text(stringResource(R.string.scan_from_image)) }
     }
 }
 
@@ -244,16 +338,19 @@ private fun PermissionPrompt(bottomReserve: Dp, openSettings: Boolean, onRequest
 private val ActionHeight = 54.dp
 
 @Composable
-private fun ScannerContent(bottomReserve: Dp) {
-    val context = LocalContext.current
+private fun ScannerContent(
+    bottomReserve: Dp,
+    handled: AtomicBoolean,
+    onDecoded: (Result) -> Unit,
+    onPickImage: () -> Unit
+) {
+    val lifecycleOwner = LocalLifecycleOwner.current
     val haptics = LocalHapticFeedback.current
-    var result by rememberSaveable { mutableStateOf<String?>(null) }
     val mainHandler = remember { android.os.Handler(android.os.Looper.getMainLooper()) }
-    // Claimed on the analyzer thread by the first decode and released when the sheet
-    // is dismissed. The camera stays bound while the sheet is up, so without this a
-    // QR left in frame would post a Runnable per frame for nothing. Seeded from
-    // [result] because that survives a tab switch while this flag does not.
-    val handled = remember { AtomicBoolean(result != null) }
+    val currentOnDecoded by rememberUpdatedState(onDecoded)
+    var camera by remember { mutableStateOf<Camera?>(null) }
+    var torchOn by remember { mutableStateOf(false) }
+    var zoom by remember { mutableStateOf<ZoomState?>(null) }
 
     // The Runnable below captures the current haptics; dropping any that are still
     // queued keeps a decode from buzzing after the user has left the scanner tab.
@@ -261,68 +358,136 @@ private fun ScannerContent(bottomReserve: Dp) {
         onDispose { mainHandler.removeCallbacksAndMessages(null) }
     }
 
-    Box(Modifier.fillMaxSize().background(Color.Black)) {
+    // Mirrors the camera's own torch and zoom state rather than tracking taps, so the
+    // button stays right when CameraX turns the torch off on its own (the app going to
+    // the background, the camera being rebound after a tab switch).
+    DisposableEffect(camera, lifecycleOwner) {
+        val info = camera?.cameraInfo
+        val torchObserver = Observer<Int> { torchOn = it == TorchState.ON }
+        val zoomObserver = Observer<ZoomState> { zoom = it }
+        info?.torchState?.observe(lifecycleOwner, torchObserver)
+        info?.zoomState?.observe(lifecycleOwner, zoomObserver)
+        onDispose {
+            info?.torchState?.removeObserver(torchObserver)
+            info?.zoomState?.removeObserver(zoomObserver)
+            torchOn = false
+            zoom = null
+        }
+    }
+
+    fun setZoom(ratio: Float) {
+        val state = zoom ?: return
+        camera?.cameraControl?.setZoomRatio(ratio.coerceIn(state.minZoomRatio, state.maxZoomRatio))
+    }
+
+    Box(
+        Modifier
+            .fillMaxSize()
+            .background(Color.Black)
+            // Pinch to zoom, double tap to jump between 1x and 2x.
+            .pointerInput(Unit) {
+                detectTransformGestures { _, _, gestureZoom, _ ->
+                    zoom?.let { setZoom(it.zoomRatio * gestureZoom) }
+                }
+            }
+            .pointerInput(Unit) {
+                detectTapGestures(onDoubleTap = {
+                    zoom?.let { setZoom(if (it.zoomRatio > it.minZoomRatio + 0.05f) it.minZoomRatio else 2f) }
+                })
+            }
+    ) {
         CameraPreview(
+            onCamera = { camera = it },
             onDecoded = { decoded ->
                 if (handled.compareAndSet(false, true)) {
                     mainHandler.post {
-                        result = decoded
+                        currentOnDecoded(decoded)
                         haptics.performHapticFeedback(HapticFeedbackType.LongPress)
                     }
                 }
             }
         )
         ViewfinderOverlay()
+
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            modifier = Modifier
+                .align(Alignment.TopEnd)
+                .statusBarsPadding()
+                .padding(16.dp)
+        ) {
+            OverlayButton(
+                label = stringResource(R.string.scan_from_image),
+                onClick = onPickImage
+            ) { tint -> ImageGlyph(tint, Modifier.size(22.dp)) }
+            if (camera?.cameraInfo?.hasFlashUnit() == true) {
+                OverlayButton(
+                    label = stringResource(if (torchOn) R.string.torch_off else R.string.torch_on),
+                    active = torchOn,
+                    onClick = { camera?.cameraControl?.enableTorch(!torchOn) }
+                ) { tint -> FlashGlyph(tint, filled = torchOn, modifier = Modifier.size(22.dp)) }
+            }
+        }
+
         // A pill reads over a moving camera image far better than text with a drop
         // shadow, and parking it above the tab switcher keeps the viewfinder clear.
-        Surface(
-            shape = CircleShape,
-            color = Color.Black.copy(alpha = 0.55f),
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(10.dp),
             modifier = Modifier
                 .align(Alignment.BottomCenter)
                 .navigationBarsPadding()
                 .padding(bottom = bottomReserve + 14.dp)
                 .padding(horizontal = 24.dp)
         ) {
-            Text(
-                stringResource(R.string.scan_instruction),
-                color = Color.White,
-                style = MaterialTheme.typography.labelLarge,
-                modifier = Modifier.padding(horizontal = 20.dp, vertical = 12.dp)
-            )
+            zoom?.takeIf { it.zoomRatio > it.minZoomRatio + 0.05f }?.let {
+                OverlayPill(String.format(LocalConfiguration.current.locales[0], "%.1f\u00d7", it.zoomRatio))
+            }
+            OverlayPill(stringResource(R.string.scan_instruction))
         }
-    }
-
-    result?.let { text ->
-        val wifi = remember(text) { parseWifiQr(text) }
-        // Built up front: the intent is null for payloads the system dialog cannot
-        // take, which is exactly when the sheet has to offer manual entry instead.
-        val addNetwork = remember(wifi) { wifi?.let { addNetworkIntentOrNull(context, it) } }
-        val addNetworkLauncher = rememberLauncherForActivityResult(
-            ActivityResultContracts.StartActivityForResult()
-        ) { outcome -> addNetworkMessage(outcome)?.let { toast(context, it) } }
-        ResultSheet(
-            text = text,
-            wifi = wifi,
-            canAddNetwork = addNetwork != null,
-            onDismiss = {
-                result = null
-                handled.set(false)
-            },
-            onOpenLink = { openLink(context, text) },
-            onCopy = { copy(context, text) },
-            onConnectWifi = { addNetwork?.let { launchAddNetwork(context, addNetworkLauncher, it) } },
-            onCopyPassword = { wifi?.let { copy(context, it.password, sensitive = true) } },
-            onOpenWifiSettings = { openWifiSettings(context) }
-        )
     }
 }
 
 @Composable
-private fun CameraPreview(onDecoded: (String) -> Unit) {
+private fun OverlayPill(text: String) {
+    Surface(shape = CircleShape, color = Color.Black.copy(alpha = 0.55f)) {
+        Text(
+            text,
+            color = Color.White,
+            style = MaterialTheme.typography.labelLarge,
+            modifier = Modifier.padding(horizontal = 20.dp, vertical = 12.dp)
+        )
+    }
+}
+
+/** Round button over the camera image; [active] fills it with the accent colour. */
+@Composable
+private fun OverlayButton(
+    label: String,
+    onClick: () -> Unit,
+    active: Boolean = false,
+    glyph: @Composable (Color) -> Unit
+) {
+    Surface(
+        onClick = onClick,
+        shape = CircleShape,
+        color = if (active) MaterialTheme.colorScheme.primary else Color.Black.copy(alpha = 0.55f),
+        modifier = Modifier
+            .size(52.dp)
+            .semantics { contentDescription = label }
+    ) {
+        Box(contentAlignment = Alignment.Center) {
+            glyph(if (active) MaterialTheme.colorScheme.onPrimary else Color.White)
+        }
+    }
+}
+
+@Composable
+private fun CameraPreview(onCamera: (Camera?) -> Unit, onDecoded: (Result) -> Unit) {
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
     val currentOnDecoded by rememberUpdatedState(onDecoded)
+    val currentOnCamera by rememberUpdatedState(onCamera)
     val previewView = remember(context) {
         PreviewView(context).apply {
             layoutParams = ViewGroup.LayoutParams(
@@ -346,7 +511,7 @@ private fun CameraPreview(onDecoded: (String) -> Unit) {
                 .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
                 .build()
                 .apply {
-                    setAnalyzer(executor, QrAnalyzer { currentOnDecoded(it) })
+                    setAnalyzer(executor, BarcodeAnalyzer { currentOnDecoded(it) })
                 }
             try {
                 provider.unbindAll()
@@ -356,10 +521,12 @@ private fun CameraPreview(onDecoded: (String) -> Unit) {
                     else -> null
                 }
                 if (cameraSelector != null) {
-                    provider.bindToLifecycle(
-                        lifecycleOwner,
-                        cameraSelector,
-                        preview, analysis
+                    currentOnCamera(
+                        provider.bindToLifecycle(
+                            lifecycleOwner,
+                            cameraSelector,
+                            preview, analysis
+                        )
                     )
                 }
             } catch (e: Exception) {
@@ -369,6 +536,7 @@ private fun CameraPreview(onDecoded: (String) -> Unit) {
 
         onDispose {
             disposed = true
+            currentOnCamera(null)
             // The provider future may not be resolved yet; unbind once it is.
             providerFuture.addListener({
                 runCatching { providerFuture.get().unbindAll() }
@@ -479,16 +647,20 @@ private fun ViewfinderOverlay() {
 
 
 /**
- * Reusable analyzer with a cached byte buffer to prevent 1-2 MB allocations
+ * Reusable analyzer with cached byte buffers to prevent 1-2 MB allocations
  * on every camera frame at 30-60 FPS.
  */
-private class QrAnalyzer(
-    private val onDecoded: (String) -> Unit
+private class BarcodeAnalyzer(
+    private val onDecoded: (Result) -> Unit
 ) : ImageAnalysis.Analyzer {
     private val reader = MultiFormatReader().apply {
-        setHints(mapOf(DecodeHintType.POSSIBLE_FORMATS to listOf(BarcodeFormat.QR_CODE)))
+        setHints(mapOf(DecodeHintType.POSSIBLE_FORMATS to SCAN_FORMATS))
+    }
+    private val linearReader = MultiFormatReader().apply {
+        setHints(mapOf(DecodeHintType.POSSIBLE_FORMATS to LINEAR_FORMATS))
     }
     private var buffer = ByteArray(0)
+    private var rotated = ByteArray(0)
 
     override fun analyze(proxy: ImageProxy) {
         try {
@@ -501,50 +673,98 @@ private class QrAnalyzer(
             buf.get(buffer, 0, remaining)
             val width = proxy.width
             val height = proxy.height
+            val stride = plane.rowStride
             // The Y plane may be padded: rowStride is the actual length of each data row.
             val source = PlanarYUVLuminanceSource(
-                buffer, plane.rowStride, height, 0, 0, width, height, false
+                buffer, stride, height, 0, 0, width, height, false
             )
-            val bitmap = BinaryBitmap(HybridBinarizer(source))
-            // decodeWithState, not decode: decode() begins with setHints(null), which
-            // would throw away the QR-only restriction set in the initializer and make
-            // every frame run the 1D, Aztec, Data Matrix and PDF417 readers too.
-            // reset() clears per-frame state but leaves the configured readers in place.
-            val r = try { reader.decodeWithState(bitmap) } catch (_: NotFoundException) { null }
-            reader.reset()
-            r?.text?.let(onDecoded)
+            var r = decode(reader, source)
+            // Linear barcodes are read along pixel rows only. The sensor is mounted in
+            // landscape, so with the phone upright a barcode the user holds level runs
+            // down the frame's columns; a quarter-turned copy puts it back on the rows.
+            // 2D codes read at any angle and do not need the second pass.
+            val rotation = proxy.imageInfo.rotationDegrees
+            if (r == null && (rotation == 90 || rotation == 270)) {
+                if (rotated.size < width * height) rotated = ByteArray(width * height)
+                for (y in 0 until height) {
+                    val row = y * stride
+                    val column = height - 1 - y
+                    for (x in 0 until width) {
+                        rotated[x * height + column] = buffer[row + x]
+                    }
+                }
+                r = decode(
+                    linearReader,
+                    PlanarYUVLuminanceSource(rotated, height, width, 0, 0, height, width, false)
+                )
+            }
+            r?.let(onDecoded)
         } catch (_: Exception) {
         } finally {
             proxy.close()
         }
     }
+
+    // decodeWithState, not decode: decode() begins with setHints(null), which would
+    // throw away the format list set in the initializer and make every frame run
+    // every reader zxing has. reset() clears per-frame state but leaves the
+    // configured readers in place.
+    private fun decode(reader: MultiFormatReader, source: PlanarYUVLuminanceSource): Result? {
+        val bitmap = BinaryBitmap(HybridBinarizer(source))
+        return try {
+            reader.decodeWithState(bitmap)
+        } catch (_: NotFoundException) {
+            null
+        } finally {
+            reader.reset()
+        }
+    }
 }
 
 
-/** What a decoded payload turned out to be; drives the sheet's badge and heading. */
-private enum class ResultKind { WIFI, LINK, TEXT }
+/** Button on the result sheet; the first one on a sheet is drawn as the primary action. */
+private class SheetAction(@StringRes val label: Int, val onClick: () -> Unit)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 internal fun ResultSheet(
     text: String,
-    wifi: WifiCredentials?,
-    canAddNetwork: Boolean,
-    onDismiss: () -> Unit,
-    onOpenLink: () -> Unit,
-    onCopy: () -> Unit,
-    onConnectWifi: () -> Unit,
-    onCopyPassword: () -> Unit,
-    onOpenWifiSettings: () -> Unit
+    format: BarcodeFormat?,
+    onDismiss: () -> Unit
 ) {
+    val context = LocalContext.current
+    val content = remember(text, format) { parseScanContent(text, isProductFormat(format)) }
+    val wifi = (content as? ScanContent.Wifi)?.credentials
+    // Built up front: the intent is null for payloads the system dialog cannot
+    // take, which is exactly when the sheet has to offer manual entry instead.
+    val addNetwork = remember(wifi) { wifi?.let { addNetworkIntentOrNull(context, it) } }
+    val canAddNetwork = addNetwork != null
+    val addNetworkLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.StartActivityForResult()
+    ) { outcome -> addNetworkMessage(outcome)?.let { toast(context, it) } }
+
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     // True only on the manual path, which is the one that renders the password.
     val showsPassword = wifi != null && !canAddNetwork && wifi.password.isNotEmpty()
-    val isLink = remember(text) { isOpenableUri(text) }
-    val kind = when {
-        wifi != null -> ResultKind.WIFI
-        isLink -> ResultKind.LINK
-        else -> ResultKind.TEXT
+    val actions = when (content) {
+        is ScanContent.Wifi -> emptyList()
+        is ScanContent.Link -> listOf(SheetAction(R.string.open) { openLink(context, content.uri) })
+        is ScanContent.Phone -> listOf(
+            SheetAction(R.string.action_call) { dial(context, content.number) },
+            SheetAction(R.string.action_add_contact) { addPhoneContact(context, content.number) }
+        )
+        is ScanContent.Sms -> listOf(SheetAction(R.string.action_send_sms) { sendSms(context, content) })
+        is ScanContent.Email -> listOf(SheetAction(R.string.action_send_email) { sendEmail(context, content) })
+        is ScanContent.Location -> listOf(SheetAction(R.string.action_show_on_map) { showOnMap(context, content) })
+        is ScanContent.Contact -> listOf(SheetAction(R.string.action_add_contact) { addContact(context, content) })
+        is ScanContent.Event -> listOf(SheetAction(R.string.action_add_event) { addEvent(context, content) })
+        is ScanContent.Product -> listOf(SheetAction(R.string.action_search) { webSearch(context, content.code) })
+        // Only a short line is worth a search; a paragraph is something to copy.
+        is ScanContent.Text -> if (text.trim().let { it.length <= 120 && it.lines().size == 1 }) {
+            listOf(SheetAction(R.string.action_search) { webSearch(context, text.trim()) })
+        } else {
+            emptyList()
+        }
     }
     ModalBottomSheet(
         onDismissRequest = onDismiss,
@@ -562,16 +782,15 @@ internal fun ResultSheet(
         Column(
             Modifier
                 .fillMaxWidth()
+                .verticalScroll(rememberScrollState())
                 .padding(horizontal = 24.dp)
                 .padding(top = 4.dp, bottom = 28.dp)
         ) {
-            ResultHeader(kind)
+            // QR is what everyone expects; naming the format only adds information
+            // for the others.
+            ResultHeader(content, format?.takeIf { it != BarcodeFormat.QR_CODE }?.let(::formatLabel))
             Spacer(Modifier.height(20.dp))
-            if (wifi != null) {
-                WifiDetails(wifi, canAddNetwork)
-            } else {
-                PayloadCard(text)
-            }
+            ResultDetails(content, text, canAddNetwork)
             Spacer(Modifier.height(24.dp))
             Column(
                 verticalArrangement = Arrangement.spacedBy(10.dp),
@@ -580,7 +799,7 @@ internal fun ResultSheet(
                 if (wifi != null) {
                     if (canAddNetwork) {
                         Button(
-                            onClick = onConnectWifi,
+                            onClick = { launchAddNetwork(context, addNetworkLauncher, addNetwork) },
                             modifier = Modifier.fillMaxWidth().height(ActionHeight)
                         ) { Text(stringResource(R.string.wifi_connect)) }
                     }
@@ -588,26 +807,33 @@ internal fun ResultSheet(
                         CopyButton(
                             label = R.string.wifi_copy_password,
                             confirmation = R.string.wifi_password_copied,
-                            onCopy = onCopyPassword
+                            onCopy = { copy(context, wifi.password, sensitive = true) }
                         )
                     }
                     if (!canAddNetwork) {
                         FilledTonalButton(
-                            onClick = onOpenWifiSettings,
+                            onClick = { openWifiSettings(context) },
                             modifier = Modifier.fillMaxWidth().height(ActionHeight)
                         ) { Text(stringResource(R.string.wifi_open_settings)) }
                     }
                 } else {
-                    if (isLink) {
-                        Button(
-                            onClick = onOpenLink,
-                            modifier = Modifier.fillMaxWidth().height(ActionHeight)
-                        ) { Text(stringResource(R.string.open)) }
+                    actions.forEachIndexed { index, action ->
+                        if (index == 0 && content !is ScanContent.Text) {
+                            Button(
+                                onClick = action.onClick,
+                                modifier = Modifier.fillMaxWidth().height(ActionHeight)
+                            ) { Text(stringResource(action.label)) }
+                        } else {
+                            FilledTonalButton(
+                                onClick = action.onClick,
+                                modifier = Modifier.fillMaxWidth().height(ActionHeight)
+                            ) { Text(stringResource(action.label)) }
+                        }
                     }
                     CopyButton(
                         label = R.string.copy,
                         confirmation = R.string.copied,
-                        onCopy = onCopy
+                        onCopy = { copy(context, copyText(content, text)) }
                     )
                 }
                 TextButton(
@@ -619,9 +845,94 @@ internal fun ResultSheet(
     }
 }
 
-/** Tinted badge plus a plain-language name for what was scanned. */
+/** What Copy puts on the clipboard: the useful part where there is one, else the payload. */
+private fun copyText(content: ScanContent, raw: String): String = when (content) {
+    is ScanContent.Phone -> content.number
+    is ScanContent.Email -> content.address
+    is ScanContent.Location ->
+        if (content.isAddressQuery) content.label else "${content.latitude}, ${content.longitude}"
+    is ScanContent.Product -> content.code
+    else -> raw
+}
+
+/** The readable form of the payload: named fields for structured kinds, the raw text otherwise. */
 @Composable
-private fun ResultHeader(kind: ResultKind) {
+private fun ResultDetails(content: ScanContent, raw: String, canAddNetwork: Boolean) {
+    val context = LocalContext.current
+    when (content) {
+        is ScanContent.Wifi -> WifiDetails(content.credentials, canAddNetwork)
+        is ScanContent.Link, is ScanContent.Text -> PayloadCard(raw)
+        is ScanContent.Phone -> Headline(content.number)
+        is ScanContent.Product -> Headline(content.code)
+        is ScanContent.Sms -> Fields(content.number, listOf(content.body))
+        is ScanContent.Email -> Fields(content.address, listOf(content.subject, content.body))
+        is ScanContent.Location -> if (content.isAddressQuery) {
+            Headline(content.label)
+        } else {
+            val coordinates = "${content.latitude}, ${content.longitude}"
+            if (content.label.isBlank()) Headline(coordinates)
+            else Fields(content.label, listOf(coordinates))
+        }
+        is ScanContent.Contact -> Fields(
+            content.name.ifBlank { content.phones.firstOrNull() ?: content.emails.firstOrNull().orEmpty() },
+            listOf(listOf(content.title, content.organization).filter(String::isNotBlank).joinToString(", ")) +
+                    content.phones + content.emails +
+                    listOf(content.address, content.url, content.note)
+        )
+        is ScanContent.Event -> Fields(
+            content.title,
+            listOf(formatEventTime(context, content).orEmpty(), content.location, content.description)
+        )
+    }
+}
+
+/** A large, selectable title - the one value the payload is about. */
+@Composable
+private fun Headline(text: String) {
+    SelectionContainer {
+        Text(
+            text,
+            style = MaterialTheme.typography.headlineSmall,
+            color = MaterialTheme.colorScheme.onSurface
+        )
+    }
+}
+
+/** [title] as a headline, then the non-blank [lines] in a card beneath it. */
+@Composable
+private fun Fields(title: String, lines: List<String>) {
+    val shown = lines.filter(String::isNotBlank)
+    Column(Modifier.fillMaxWidth()) {
+        if (title.isNotBlank()) Headline(title)
+        if (shown.isNotEmpty()) {
+            if (title.isNotBlank()) Spacer(Modifier.height(14.dp))
+            Surface(
+                shape = MaterialTheme.shapes.medium,
+                color = MaterialTheme.colorScheme.surfaceContainerHighest,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                SelectionContainer {
+                    Column(
+                        verticalArrangement = Arrangement.spacedBy(8.dp),
+                        modifier = Modifier.padding(18.dp)
+                    ) {
+                        shown.forEach {
+                            Text(
+                                it,
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+/** Tinted badge plus a plain-language name for what was scanned, and its format if notable. */
+@Composable
+private fun ResultHeader(content: ScanContent, formatName: String?) {
     Row(verticalAlignment = Alignment.CenterVertically) {
         Surface(
             shape = CircleShape,
@@ -631,25 +942,48 @@ private fun ResultHeader(kind: ResultKind) {
             Box(contentAlignment = Alignment.Center) {
                 val tint = MaterialTheme.colorScheme.onPrimaryContainer
                 val glyph = Modifier.size(21.dp)
-                when (kind) {
-                    ResultKind.WIFI -> WifiGlyph(tint, glyph)
-                    ResultKind.LINK -> LinkGlyph(tint, glyph)
-                    ResultKind.TEXT -> TextGlyph(tint, glyph)
+                when (content) {
+                    is ScanContent.Wifi -> WifiGlyph(tint, glyph)
+                    is ScanContent.Link -> LinkGlyph(tint, glyph)
+                    is ScanContent.Text -> TextGlyph(tint, glyph)
+                    is ScanContent.Phone -> PhoneGlyph(tint, glyph)
+                    is ScanContent.Sms -> MessageGlyph(tint, glyph)
+                    is ScanContent.Email -> MailGlyph(tint, glyph)
+                    is ScanContent.Location -> PinGlyph(tint, glyph)
+                    is ScanContent.Contact -> PersonGlyph(tint, glyph)
+                    is ScanContent.Event -> CalendarGlyph(tint, glyph)
+                    is ScanContent.Product -> BarcodeGlyph(tint, glyph)
                 }
             }
         }
         Spacer(Modifier.width(14.dp))
-        Text(
-            stringResource(
-                when (kind) {
-                    ResultKind.WIFI -> R.string.wifi_network
-                    ResultKind.LINK -> R.string.result_type_link
-                    ResultKind.TEXT -> R.string.result_type_text
-                }
-            ),
-            style = MaterialTheme.typography.titleMedium,
-            color = MaterialTheme.colorScheme.onSurface
-        )
+        Column {
+            Text(
+                stringResource(
+                    when (content) {
+                        is ScanContent.Wifi -> R.string.wifi_network
+                        is ScanContent.Link -> R.string.result_type_link
+                        is ScanContent.Text -> R.string.result_type_text
+                        is ScanContent.Phone -> R.string.result_type_phone
+                        is ScanContent.Sms -> R.string.result_type_sms
+                        is ScanContent.Email -> R.string.result_type_email
+                        is ScanContent.Location -> R.string.result_type_location
+                        is ScanContent.Contact -> R.string.result_type_contact
+                        is ScanContent.Event -> R.string.result_type_event
+                        is ScanContent.Product -> R.string.result_type_product
+                    }
+                ),
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+            if (formatName != null) {
+                Text(
+                    formatName,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        }
     }
 }
 

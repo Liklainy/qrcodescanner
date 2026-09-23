@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">QR-сканер</string>
+    <string name="app_name">QRefka Scan</string>
     <string name="tile_label">Сканировать QR</string>
     <string name="tab_scan">Сканировать</string>
     <string name="tab_generate">Создать</string>
@@ -21,7 +21,7 @@
     <string name="no_app_found">Нет приложения, которое может это открыть</string>
     <string name="qr_content_description">Созданный QR-код</string>
     <string name="too_much_text">Слишком много текста для QR-кода</string>
-    <string name="scan_instruction">Наведите камеру на QR-код</string>
+    <string name="scan_instruction">Наведите камеру на QR-код или штрихкод</string>
     <string name="share">Поделиться</string>
     <string name="save">Сохранить</string>
     <string name="saved">Сохранено в галерею ✓</string>
@@ -44,4 +44,32 @@
     <string name="wifi_already_saved">Сеть уже сохранена</string>
     <string name="wifi_add_failed">Не удалось добавить сеть</string>
     <string name="wifi_manual_hint">Эту сеть нельзя добавить автоматически. Скопируйте пароль и добавьте её в настройках Wi-Fi.</string>
+    <string name="scan_from_image">Сканировать из галереи</string>
+    <string name="no_code_in_image">На изображении не найден код</string>
+    <string name="torch_on">Включить фонарик</string>
+    <string name="torch_off">Выключить фонарик</string>
+    <string name="result_type_phone">Номер телефона</string>
+    <string name="result_type_sms">SMS-сообщение</string>
+    <string name="result_type_email">Электронная почта</string>
+    <string name="result_type_location">Местоположение</string>
+    <string name="result_type_contact">Контакт</string>
+    <string name="result_type_event">Событие</string>
+    <string name="result_type_product">Код товара</string>
+    <string name="action_call">Позвонить</string>
+    <string name="action_send_sms">Отправить сообщение</string>
+    <string name="action_send_email">Написать письмо</string>
+    <string name="action_show_on_map">Показать на карте</string>
+    <string name="action_add_contact">Добавить в контакты</string>
+    <string name="action_add_event">Добавить в календарь</string>
+    <string name="action_search">Найти в интернете</string>
+    <string name="privacy_consent_title">Политика конфиденциальности</string>
+    <string name="privacy_consent_intro">Прежде чем начать, ознакомьтесь с нашей</string>
+    <string name="privacy_policy">Политикой конфиденциальности</string>
+    <string name="privacy_consent_outro">. Приложение не имеет доступа к интернету. Камера и выбранное вами изображение используются только для распознавания кодов на устройстве: изображения обрабатываются в памяти и никуда не сохраняются и не передаются. Нажмите «Принимаю», чтобы согласиться и продолжить.</string>
+    <string name="privacy_agree">Принимаю</string>
+    <string name="privacy_decline">Не принимаю</string>
+    <string name="privacy_policy_url">https://qrcodescanner.qrefka.ru/privacy.ru.html</string>
+    <string name="privacy_dialog_text">QRefka Scan использует камеру и выбранные вами изображения только для распознавания кодов на устройстве. Ничего не сохраняется и не передаётся, доступа к интернету у приложения нет.\n\nЕсли вы отзовёте согласие, приложение снова запросит его перед использованием.</string>
+    <string name="privacy_open_policy">Открыть политику</string>
+    <string name="privacy_withdraw">Отозвать согласие</string>
 </resources>

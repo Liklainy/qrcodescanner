@@ -1,4 +1,4 @@
-# QR Scanner
+# QRefka Scan
 
 A lightweight, privacy-focused QR code scanner and generator for Android. Built with Jetpack Compose and CameraX — **zero Google Play Services required**.
 
@@ -12,7 +12,7 @@ A lightweight, privacy-focused QR code scanner and generator for Android. Built 
 - **Share & Save** — Share generated QR codes, or save them to your gallery (Android 10+)
 - **Quick Settings Tile** — Launch the scanner directly from the notification shade
 - **Dark Mode** — Full Material 3 theming with light/dark support
-- **Localized** — English and Russian
+- **Localized** — English, Russian and Simplified Chinese
 - **Tiny APK** — ~2.4 MB release build with R8 minification and resource shrinking
 
 ## Screenshots

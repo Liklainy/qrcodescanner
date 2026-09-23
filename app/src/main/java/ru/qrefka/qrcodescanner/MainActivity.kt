@@ -13,6 +13,7 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
@@ -20,8 +21,10 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.ime
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -29,7 +32,9 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.saveable.rememberSaveableStateHolder
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -39,13 +44,22 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import ru.qrefka.qrcodescanner.ui.GeneratorScreen
+import ru.qrefka.qrcodescanner.ui.PrivacyConsentScreen
+import ru.qrefka.qrcodescanner.ui.PrivacyDialog
 import ru.qrefka.qrcodescanner.ui.ScannerScreen
+import ru.qrefka.qrcodescanner.ui.clearPrivacyAccepted
+import ru.qrefka.qrcodescanner.ui.components.InfoGlyph
+import ru.qrefka.qrcodescanner.ui.isPrivacyAccepted
+import ru.qrefka.qrcodescanner.ui.setPrivacyAccepted
 import ru.qrefka.qrcodescanner.ui.theme.QrTheme
 
 class MainActivity : ComponentActivity() {
     private var currentTab by mutableIntStateOf(0)
+    private var privacyAccepted by mutableStateOf(false)
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -63,12 +77,27 @@ class MainActivity : ComponentActivity() {
         } else {
             savedInstanceState?.getInt(STATE_TAB) ?: 0
         }
+        privacyAccepted = isPrivacyAccepted(this)
         setContent {
             QrTheme {
-                AppShell(
-                    selectedTab = currentTab,
-                    onTabSelected = { currentTab = it }
-                )
+                if (privacyAccepted) {
+                    AppShell(
+                        selectedTab = currentTab,
+                        onTabSelected = { currentTab = it },
+                        onWithdrawConsent = {
+                            clearPrivacyAccepted(this)
+                            privacyAccepted = false
+                        }
+                    )
+                } else {
+                    PrivacyConsentScreen(
+                        onAccept = {
+                            setPrivacyAccepted(this)
+                            privacyAccepted = true
+                        },
+                        onDecline = { finishAndRemoveTask() }
+                    )
+                }
             }
         }
     }
@@ -107,8 +136,13 @@ class MainActivity : ComponentActivity() {
 private val SwitcherReserve = 84.dp
 
 @Composable
-private fun AppShell(selectedTab: Int, onTabSelected: (Int) -> Unit) {
+private fun AppShell(
+    selectedTab: Int,
+    onTabSelected: (Int) -> Unit,
+    onWithdrawConsent: () -> Unit
+) {
     val tab = selectedTab.coerceIn(0, 1)
+    var showPrivacy by rememberSaveable { mutableStateOf(false) }
     val density = LocalDensity.current
     // The switcher floats over the content rather than sitting in a bottomBar, so the
     // camera can run to all four edges. It steps aside for the keyboard, which would
@@ -141,7 +175,44 @@ private fun AppShell(selectedTab: Int, onTabSelected: (Int) -> Unit) {
                 .windowInsetsPadding(WindowInsets.navigationBars)
                 .padding(bottom = 20.dp)
         ) {
-            TabSwitcher(selected = tab, onSelect = onTabSelected)
+            // The privacy button rides next to the switcher so the policy stays one tap
+            // away on both tabs, whatever state the screen underneath is in.
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(10.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                TabSwitcher(selected = tab, onSelect = onTabSelected)
+                PrivacyButton(onClick = { showPrivacy = true })
+            }
+        }
+    }
+
+    if (showPrivacy) {
+        PrivacyDialog(
+            onDismiss = { showPrivacy = false },
+            onWithdraw = {
+                showPrivacy = false
+                onWithdrawConsent()
+            }
+        )
+    }
+}
+
+@Composable
+private fun PrivacyButton(onClick: () -> Unit) {
+    val label = stringResource(R.string.privacy_consent_title)
+    Surface(
+        onClick = onClick,
+        shape = CircleShape,
+        color = MaterialTheme.colorScheme.surfaceContainerHighest,
+        shadowElevation = 8.dp,
+        tonalElevation = 3.dp,
+        modifier = Modifier
+            .size(52.dp)
+            .semantics { contentDescription = label }
+    ) {
+        Box(contentAlignment = Alignment.Center) {
+            InfoGlyph(MaterialTheme.colorScheme.onSurfaceVariant, Modifier.size(22.dp))
         }
     }
 }

@@ -56,7 +56,7 @@ private fun securityOf(type: String): WifiSecurity = when {
 }
 
 /** Splits on `;` while treating a backslash-escaped `;` as part of the value. */
-private fun splitFields(body: String): List<String> {
+internal fun splitFields(body: String): List<String> {
     val fields = mutableListOf<String>()
     val current = StringBuilder()
     var i = 0
@@ -82,7 +82,7 @@ private fun splitFields(body: String): List<String> {
     return fields
 }
 
-private fun unescape(value: String): String {
+internal fun unescape(value: String): String {
     if (!value.contains('\\')) return value
     val out = StringBuilder(value.length)
     var i = 0
