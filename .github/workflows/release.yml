@@ -1,7 +1,9 @@
 name: Release
 
 # Push a tag like v1.0 to build a signed release APK and publish it as a GitHub
-# Release. versionName comes from the tag; versionCode from gradle.properties.
+# Release. versionCode and versionName both come from gradle.properties, and the
+# tag has to match appVersionName: that is what stops a tag from shipping a build
+# whose version (and release notes) nobody bumped.
 on:
   push:
     tags: ['v*']
@@ -14,6 +16,15 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
+
+      - name: Check tag matches gradle.properties
+        run: |
+          name=$(sed -n 's/^appVersionName=//p' gradle.properties)
+          if [ "v$name" != "$GITHUB_REF_NAME" ]; then
+            echo "::error::Tag $GITHUB_REF_NAME does not match appVersionName=$name in gradle.properties."
+            echo "Bump appVersionCode/appVersionName and release_notes.txt, commit, then tag v<appVersionName>."
+            exit 1
+          fi
 
       - name: Set up JDK 21
         uses: actions/setup-java@v5
@@ -42,7 +53,7 @@ jobs:
           SIGNING_STORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
           SIGNING_KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
           SIGNING_KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
-        run: ./gradlew assembleRelease --no-daemon -PappVersionName="${GITHUB_REF_NAME#v}"
+        run: ./gradlew assembleRelease --no-daemon
 
       - name: Verify signature
         run: |

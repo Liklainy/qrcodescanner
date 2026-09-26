@@ -34,19 +34,37 @@ Output: `app/build/outputs/apk/release/app-release.apk`.
 
 ## Release via GitHub Actions
 
-`.github/workflows/release.yml` builds a signed APK when a `v*` tag is pushed and
-attaches it to a GitHub Release (notes from `fastlane/metadata/huawei/release_notes.txt`).
+Two workflows publish builds:
+
+- `.github/workflows/release.yml` builds a signed APK when a `v*` tag is pushed and
+  attaches it to a GitHub Release (notes from `fastlane/metadata/huawei/release_notes.txt`).
+- `.github/workflows/appgallery.yml` is started by hand (**Actions → AppGallery → Run
+  workflow**) and uploads to AppGallery through the `deploy_huawei` / `release_huawei`
+  Fastlane lanes. Leave *Submit for review* off for the first run, check the draft in
+  the AGC console, and submit there.
 
 One-time setup — repository **Settings → Secrets and variables → Actions**:
 
-| Secret | Value |
-|---|---|
-| `KEYSTORE_BASE64` | `base64 -i release.keystore \| pbcopy`, then paste |
-| `KEYSTORE_PASSWORD` | keystore password |
-| `KEY_ALIAS` | `qrcode` |
-| `KEY_PASSWORD` | key password (same as keystore password for PKCS12) |
+| Secret | Used by | Value |
+|---|---|---|
+| `KEYSTORE_BASE64` | both | `base64 -i release.keystore \| pbcopy`, then paste |
+| `KEYSTORE_PASSWORD` | both | keystore password |
+| `KEY_ALIAS` | both | `qrcode` |
+| `KEY_PASSWORD` | both | key password (same as keystore password for PKCS12) |
+| `HUAWEI_CLIENT_ID` | AppGallery | AGC → Users and permissions → API client → client ID |
+| `HUAWEI_CLIENT_SECRET` | AppGallery | the same API client's secret |
+| `HUAWEI_APP_ID` | AppGallery | App ID from the app's App information page |
 
-Then release:
+The API client needs the App administrator (or App release) role for the app, or the
+upload is refused.
+
+Both workflows hand the keystore to Gradle as `SIGNING_KEYSTORE`,
+`SIGNING_STORE_PASSWORD`, `SIGNING_KEY_ALIAS` and `SIGNING_KEY_PASSWORD` — the same
+variables as a local build above and as `fastlane/.env.default`.
+
+To release, bump the version and notes first (see below), commit, then tag with
+`v` + `appVersionName`. The workflow stops if the tag and `gradle.properties` disagree,
+so a tag cannot ship a build nobody bumped:
 
 ```sh
 git tag v1.0 && git push origin v1.0
@@ -55,7 +73,10 @@ git tag v1.0 && git push origin v1.0
 ## Bump the version
 
 `appVersionCode` in `gradle.properties` must be higher than the last uploaded
-build — AppGallery rejects a duplicate. Either edit the file or pass it in:
+build — AppGallery rejects a duplicate. For every release, bump `appVersionCode` and
+`appVersionName` there and replace `fastlane/metadata/huawei/release_notes.txt`
+with this version's notes — both the GitHub Release and the AppGallery upload use
+that file as is. For a one-off local build you can pass the values in instead:
 
 ```sh
 ./gradlew assembleRelease -PappVersionCode=2 -PappVersionName=1.1
@@ -144,7 +165,7 @@ store listing link. See [docs/README.md](docs/README.md).
 
 - Privacy consent: on first launch a dialog links the policy (in the device language) and the app stays blocked until the user agrees; Disagree closes it. Afterwards the ⓘ button next to the tab switcher reopens the policy and lets the user withdraw consent, which brings the first-launch dialog back.
 
-- Scan: CameraX preview + ZXing `MultiFormatReader` analyze frames; on a hit, show the text with **Open** (shown when the content is a single token starting with a URI scheme, e.g. `https:`, `mailto:`, `geo:`) and **Copy** buttons.
+- Scan: CameraX preview + ZXing `MultiFormatReader` analyze frames; on a hit, `util/ScanContent.kt` classifies the payload and the result sheet offers the matching action — **Call**, **Send message**, **Write email**, **Show on map**, **Add to contacts**, **Add to calendar**, **Search the web** for product codes and short text, or **Open** for any other single token starting with a URI scheme (e.g. `https:`, `tg:`, `otpauth:`) — plus **Copy**.
 - Wi-Fi codes: a `WIFI:` payload is parsed (`util/WifiQr.kt`) and the sheet shows the SSID, security type and hidden flag instead of the raw text. **Add network** hands the credentials to the system add-network dialog (`Settings.ACTION_WIFI_ADD_NETWORKS`, API 30+), which does the saving — the app gains no Wi-Fi permission. Where that dialog cannot take the network (API < 30, WEP, enterprise, an out-of-range passphrase) the sheet shows the password for manual entry instead, under `FLAG_SECURE`, with **Copy password** marking the clip sensitive.
 - Generate: ZXing `MultiFormatWriter` → `Bitmap`, rendered with Compose `Image`.
 - Quick action tile: `ScannerTileService` (`ScannerTileService.kt`) appears in the Quick Settings panel alongside WiFi/BT; tapping it launches the scanner.

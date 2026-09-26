@@ -58,12 +58,11 @@ jobs:
 
       - name: Upload to AppGallery
         env:
-          # The Fastfile reads KEYSTORE_PASS/KEY_PASS; the repository secrets are
-          # named ...PASSWORD for the Gradle build in release.yml. Map, don't rename.
-          KEYSTORE_PATH: ${{ runner.temp }}/release.keystore
-          KEYSTORE_PASS: ${{ secrets.KEYSTORE_PASSWORD }}
-          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
-          KEY_PASS: ${{ secrets.KEY_PASSWORD }}
+          # Same signing variables as release.yml; Gradle reads them directly.
+          SIGNING_KEYSTORE: ${{ runner.temp }}/release.keystore
+          SIGNING_STORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          SIGNING_KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          SIGNING_KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
           HUAWEI_CLIENT_ID: ${{ secrets.HUAWEI_CLIENT_ID }}
           HUAWEI_CLIENT_SECRET: ${{ secrets.HUAWEI_CLIENT_SECRET }}
           HUAWEI_APP_ID: ${{ secrets.HUAWEI_APP_ID }}

@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">QRefka Scan</string>
-    <string name="tile_label">扫描二维码</string>
+    <string name="tile_label">扫码</string>
     <string name="tab_scan">扫描</string>
     <string name="tab_generate">生成</string>
     <string name="open">打开</string>
@@ -69,7 +69,7 @@
     <string name="privacy_agree">同意</string>
     <string name="privacy_decline">不同意</string>
     <string name="privacy_policy_url">https://qrcodescanner.qrefka.ru/privacy.zh.html</string>
-    <string name="privacy_dialog_text">QRefka Scan 仅在您的设备上使用相机画面以及您选择的图片来识别二维码和条形码。任何内容都不会被保存或发送，本应用也没有网络访问权限。\n\n如果您撤回同意，应用将在您再次使用前重新征求您的同意。</string>
+    <string name="privacy_dialog_text">QRefka Scan 仅在您的设备上使用相机画面以及您选择的图片来识别二维码和条形码。扫描的内容不会被保存或发送，应用仅保留一个您已同意隐私政策的标记；本应用也没有网络访问权限。\n\n如果您撤回同意，应用将在您再次使用前重新征求您的同意。</string>
     <string name="privacy_open_policy">查看隐私政策</string>
     <string name="privacy_withdraw">撤回同意</string>
 </resources>

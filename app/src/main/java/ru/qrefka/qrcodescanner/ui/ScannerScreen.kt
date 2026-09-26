@@ -243,12 +243,16 @@ fun ScannerScreen(bottomReserve: Dp = 0.dp) {
             onPickImage = pickImage,
             onRequest = {
                 if (deniedPermanently) {
-                    context.startActivity(
-                        Intent(
-                            Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
-                            Uri.fromParts("package", context.packageName, null)
+                    try {
+                        context.startActivity(
+                            Intent(
+                                Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
+                                Uri.fromParts("package", context.packageName, null)
+                            )
                         )
-                    )
+                    } catch (_: ActivityNotFoundException) {
+                        toast(context, R.string.no_app_found)
+                    }
                 } else {
                     launcher.launch(Manifest.permission.CAMERA)
                 }

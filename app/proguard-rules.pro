@@ -1,25 +1,6 @@
-# ZXing — keep only classes used by the app
-# Decoding: MultiFormatReader and its reader chain
--keep class com.google.zxing.MultiFormatReader { *; }
--keep class com.google.zxing.qrcode.QRCodeReader { *; }
--keep class com.google.zxing.BinaryBitmap { *; }
--keep class com.google.zxing.common.HybridBinarizer { *; }
--keep class com.google.zxing.PlanarYUVLuminanceSource { *; }
--keep class com.google.zxing.Result { *; }
+# ZXing needs no keep rules: it uses no reflection or serialization, so R8 keeps
+# exactly the readers and writers the app's code reaches (MultiFormatReader pulls
+# in every format in SCAN_FORMATS) and strips the rest, like any other code.
 
-# Encoding: MultiFormatWriter for QR generation
--keep class com.google.zxing.MultiFormatWriter { *; }
--keep class com.google.zxing.qrcode.QRCodeWriter { *; }
--keep class com.google.zxing.common.BitMatrix { *; }
-
-# Enums and hints referenced in code
--keep class com.google.zxing.BarcodeFormat { *; }
--keep class com.google.zxing.EncodeHintType { *; }
--keep class com.google.zxing.qrcode.decoder.ErrorCorrectionLevel { *; }
-
-# Exceptions
--keep class com.google.zxing.NotFoundException { *; }
--keep class com.google.zxing.WriterException { *; }
-
-# Suppress warnings for unused ZXing classes that R8 may strip
+# Suppress warnings for the parts of ZXing that R8 strips.
 -dontwarn com.google.zxing.**

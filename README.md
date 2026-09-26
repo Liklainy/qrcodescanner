@@ -4,7 +4,15 @@ A lightweight, privacy-focused QR code scanner and generator for Android. Built 
 
 ## Features
 
-- **Scan** — Real-time QR code scanning via CameraX with ZXing decoding
+- **Scan** — Real-time scanning via CameraX with ZXing decoding: QR, Data Matrix, Aztec,
+  PDF417 and the common barcodes (EAN-13/8, UPC-A/E, Code 128/39/93, ITF, Codabar),
+  with a flashlight button, pinch-to-zoom and double-tap for 2x
+- **Scan from image** — Read a code from a picture chosen in the system photo picker;
+  needs no storage permission and works without camera access
+- **Smart actions** — Links, phone numbers, SMS, email, `geo:` locations, contact cards
+  (vCard, MECARD), calendar events (VEVENT) and product barcodes each get a matching
+  action — call, add to contacts or calendar, show on a map, search — handed to the
+  system app, so the app needs no contacts, calendar or phone permission
 - **Wi-Fi codes** — A scanned `WIFI:` code shows the network, its security type and
   whether it is hidden; on Android 11+ one tap hands it to the system dialog that
   saves the network, with no Wi-Fi permission of the app's own
@@ -13,6 +21,9 @@ A lightweight, privacy-focused QR code scanner and generator for Android. Built 
 - **Quick Settings Tile** — Launch the scanner directly from the notification shade
 - **Dark Mode** — Full Material 3 theming with light/dark support
 - **Localized** — English, Russian and Simplified Chinese
+- **Privacy consent** — On first launch the app asks the user to accept the privacy
+  policy before anything else runs; the ⓘ button next to the tabs reopens the policy
+  and lets the user withdraw consent
 - **Tiny APK** — ~2.4 MB release build with R8 minification and resource shrinking
 
 ## Screenshots
@@ -83,6 +94,13 @@ passes them through the same way.
 push to `main` and on pull requests, uploading the test and lint reports as
 artifacts.
 
+Two more workflows publish builds; their secrets and steps are in
+[PUBLISHING.md](PUBLISHING.md):
+
+- `release.yml` — on a `v*` tag, builds a signed APK and attaches it to a GitHub Release.
+- `appgallery.yml` — run by hand from the Actions tab; uploads to AppGallery through
+  the Fastlane lanes below, optionally submitting for review.
+
 ## Deployment (Fastlane)
 
 The project uses [Fastlane](https://fastlane.tools/) with the [`huawei_appgallery_connect`](https://github.com/pifleo/fastlane-plugin-huawei_appgallery_connect) plugin for automated publishing to Huawei AppGallery.
@@ -118,20 +136,27 @@ The project uses [Fastlane](https://fastlane.tools/) with the [`huawei_appgaller
 
 ```
 app/src/main/java/ru/qrefka/qrcodescanner/
-├── MainActivity.kt          # Entry point, theme, tab navigation
+├── MainActivity.kt          # Entry point, consent gate, tab navigation
 ├── ScannerTileService.kt    # Quick Settings tile
 ├── ui/
-│   ├── ScannerScreen.kt     # Camera preview, viewfinder overlay, result sheet,
-│   │                        #   Wi-Fi details and the system add-network hand-off
-│   └── GeneratorScreen.kt   # Text input, QR generation, share/save
+│   ├── ScannerScreen.kt     # Camera preview, viewfinder overlay, frame analyzer,
+│   │                        #   result sheet, Wi-Fi details and add-network hand-off
+│   ├── ResultActions.kt     # Intents for call, SMS, email, map, contact, event, search
+│   ├── GeneratorScreen.kt   # Text input, QR generation, share/save
+│   ├── PrivacyConsent.kt    # First-launch consent screen, policy dialog, consent flag
+│   ├── components/          # Hand-drawn glyphs, scroll-to-fill column
+│   └── theme/               # Material 3 colours, type, shapes
 └── util/
+    ├── Barcodes.kt          # Supported formats, labels, decoding a picked image
+    ├── ScanContent.kt       # Classifies a payload (vCard, MECARD, VEVENT, geo:, …)
     ├── QrEncoder.kt         # ZXing QR encoding wrapper
     ├── UriUtils.kt          # Decides whether scanned text is openable
     └── WifiQr.kt            # Parses the `WIFI:` payload (escapes, field order)
 
 app/src/main/res/
 ├── values/strings.xml       # English (default)
-└── values-ru/strings.xml    # Russian
+├── values-ru/strings.xml    # Russian
+└── values-zh-rCN/strings.xml  # Simplified Chinese
 
 docs/                        # GitHub Pages site (landing page + privacy policy)
 ```
@@ -142,23 +167,26 @@ The app follows a single-Activity architecture with Compose navigation via tabs:
 
 - **No ViewModel** — State is managed locally in composables. The app's scope is small enough that this is simpler than adding a ViewModel layer.
 - **No Google Play Services** — All dependencies are pure AndroidX or pure Java (ZXing). Fully compatible with Huawei AppGallery, F-Droid, and other alternative stores.
-- **Background thread decoding** — QR frame analysis runs on a dedicated single-thread executor, keeping the main thread free.
-- **No persisted state** — No database, preference file, or log; `allowBackup` is off, and
-  scanned content never leaves the device. The two files the app can write are both
-  user-initiated: a gallery PNG via `MediaStore`, and a `cacheDir/shared_images/` copy that
-  backs the Share action and is pruned after an hour (`GeneratorScreen.kt:215`).
+- **Background thread decoding** — Frame analysis runs on a dedicated single-thread executor, keeping the main thread free.
+- **Almost no persisted state** — Scanned and generated content goes to no database,
+  preference file, or log; `allowBackup` is off, and scanned content never leaves the
+  device. The one thing kept across launches is the privacy-consent flag, a single
+  boolean in the `consent` SharedPreferences (`PrivacyConsent.kt`). The two files the app
+  can write are both user-initiated: a gallery PNG via `MediaStore`, and a
+  `cacheDir/shared_images/` copy that backs the Share action and is pruned after an hour
+  (`shareBitmap` in `GeneratorScreen.kt`).
 - **Wi-Fi without a Wi-Fi permission** — Saving a scanned network is delegated to the
   system "add network" dialog via `Settings.ACTION_WIFI_ADD_NETWORKS`
-  (`ScannerScreen.kt:608`). Settings owns the dialog and the write, so the app needs no
+  (`addNetworkIntentOrNull` in `ScannerScreen.kt`). Settings owns the dialog and the write, so the app needs no
   `CHANGE_WIFI_STATE`; `WifiManager.addNetworkSuggestions` would cost that permission and
   only make the network an auto-join candidate rather than a saved one. The dialog exists
   from API 30 and its builder covers neither WEP nor enterprise networks, so anything it
   cannot express falls back to showing the credentials for manual entry.
 - **Passwords treated as credentials** — On the manual path the result sheet renders a
   passphrase, so that sheet — its own dialog window — sets `FLAG_SECURE` to keep it out of
-  screenshots and recents snapshots (`ScannerScreen.kt:439`), and **Copy password** marks
+  screenshots and recents snapshots (`ResultSheet` in `ScannerScreen.kt`), and **Copy password** marks
   the clip `EXTRA_IS_SENSITIVE` so API 33+ leaves it out of the clipboard preview, history
-  and keyboard suggestions (`ScannerScreen.kt:748`).
+  and keyboard suggestions (`copy` in `ScannerScreen.kt`).
 
 ## Permissions
 
@@ -177,7 +205,8 @@ The manifest also declares a `<queries>` element for `android.settings.WIFI_ADD_
 That is package visibility, not a permission — the installed set stays CAMERA-only. It is
 needed because from API 30 `queryIntentActivities` is filtered without it, and the app aims
 the add-network intent at the one *system* handler it can confirm rather than letting an
-intent whose extras carry the passphrase resolve by action alone (`ScannerScreen.kt:631`).
+intent whose extras carry the passphrase resolve by action alone (`systemHandler` in
+`ScannerScreen.kt`).
 
 Dependency bumps can reintroduce merged permissions, so re-check after one:
 

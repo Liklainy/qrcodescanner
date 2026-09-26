@@ -11,10 +11,14 @@ default_platform(:android)
 #   HUAWEI_CLIENT_ID       — AppGallery Connect API client ID
 #   HUAWEI_CLIENT_SECRET   — AppGallery Connect API client secret
 #   HUAWEI_APP_ID          — App ID from AppGallery Connect console
-#   KEYSTORE_PATH          — Path to the release keystore (default: release.keystore)
-#   KEYSTORE_PASS           — Keystore password
-#   KEY_ALIAS              — Key alias (default: qrcode)
-#   KEY_PASS               — Key password
+#   SIGNING_KEYSTORE       — Path to the release keystore, relative to app/
+#                            (default: ../release.keystore, i.e. the repo root)
+#   SIGNING_STORE_PASSWORD — Keystore password
+#   SIGNING_KEY_ALIAS      — Key alias (default: qrcode)
+#   SIGNING_KEY_PASSWORD   — Key password
+#
+#   These are the variables app/build.gradle.kts signs with, so the lanes, the
+#   Release workflow and a plain ./gradlew assembleRelease all share one config.
 #   VERSION_CODE           — Optional; overrides appVersionCode from gradle.properties.
 #                            AppGallery rejects a re-used version code, so every
 #                            upload needs a higher one than the last.
@@ -71,12 +75,20 @@ platform :android do
 
   desc "Build signed release APK"
   lane :build_release do
-    properties = {
-      "android.injected.signing.store.file" => ENV.fetch("KEYSTORE_PATH", "../release.keystore"),
-      "android.injected.signing.store.password" => ENV.fetch("KEYSTORE_PASS"),
-      "android.injected.signing.key.alias" => ENV.fetch("KEY_ALIAS", "qrcode"),
-      "android.injected.signing.key.password" => ENV.fetch("KEY_PASS"),
-    }
+    # Gradle reads these from the environment it inherits; without them it would
+    # quietly build an unsigned APK, which AppGallery rejects.
+    { "SIGNING_KEYSTORE" => "../release.keystore", "SIGNING_KEY_ALIAS" => "qrcode" }.each do |name, default|
+      ENV[name] = default if ENV.fetch(name, "").strip.empty?
+    end
+    %w[SIGNING_STORE_PASSWORD SIGNING_KEY_PASSWORD].each do |name|
+      UI.user_error!("#{name} is not set") if ENV.fetch(name, "").empty?
+    end
+    # Gradle resolves a relative path against the app module, so check it there.
+    app_dir = File.join(FastlaneCore::FastlaneFolder.path, "..", "app")
+    keystore = File.expand_path(ENV["SIGNING_KEYSTORE"], app_dir)
+    UI.user_error!("Keystore not found: #{keystore}") unless File.exist?(keystore)
+
+    properties = {}
     properties["appVersionCode"] = ENV["VERSION_CODE"] if ENV["VERSION_CODE"]
     properties["appVersionName"] = ENV["VERSION_NAME"] if ENV["VERSION_NAME"]
 
