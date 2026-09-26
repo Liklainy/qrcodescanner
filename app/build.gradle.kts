@@ -9,6 +9,11 @@ plugins {
 val appVersionCode = (property("appVersionCode") as String).toInt()
 val appVersionName = property("appVersionName") as String
 
+/** An environment variable, or null when it is unset or blank. */
+fun env(name: String): String? = System.getenv(name)?.takeIf { it.isNotBlank() }
+
+var releaseSigningProblems = emptyList<String>()
+
 android {
     namespace = "ru.qrefka.qrcodescanner"
     compileSdk = 37
@@ -24,17 +29,28 @@ android {
 
     // Release signing comes from the environment (the Release workflow decodes the
     // keystore from repository secrets). Without SIGNING_KEYSTORE the release build
-    // stays unsigned, so local assembleRelease keeps working without a key.
-    val signingKeystore = System.getenv("SIGNING_KEYSTORE")?.takeIf { it.isNotBlank() }
+    // stays unsigned, so local assembleRelease keeps working without a key; pass
+    // -PrequireSigning (the workflows and Fastlane do) to make that an error instead.
+    // Once SIGNING_KEYSTORE is set, the other three must be set too.
+    val signingKeystore = env("SIGNING_KEYSTORE")?.let { file(it.trim()) }
     signingConfigs {
         if (signingKeystore != null) {
             create("release") {
-                storeFile = file(signingKeystore)
-                storePassword = System.getenv("SIGNING_STORE_PASSWORD")
-                keyAlias = System.getenv("SIGNING_KEY_ALIAS")
-                keyPassword = System.getenv("SIGNING_KEY_PASSWORD")
+                storeFile = signingKeystore
+                storePassword = env("SIGNING_STORE_PASSWORD")
+                keyAlias = env("SIGNING_KEY_ALIAS")?.trim()
+                keyPassword = env("SIGNING_KEY_PASSWORD")
             }
         }
+    }
+    releaseSigningProblems = when {
+        signingKeystore == null ->
+            if (providers.gradleProperty("requireSigning").isPresent) listOf("SIGNING_KEYSTORE is not set") else emptyList()
+        else -> listOfNotNull(
+            "Keystore not found: $signingKeystore".takeUnless { signingKeystore.isFile },
+        ) + listOf("SIGNING_STORE_PASSWORD", "SIGNING_KEY_ALIAS", "SIGNING_KEY_PASSWORD")
+            .filter { env(it) == null }
+            .map { "$it is not set" }
     }
 
     buildTypes {
@@ -65,6 +81,18 @@ android {
         unitTests.isIncludeAndroidResources = true
     }
 }
+
+// Checked when a release build runs rather than at configuration, so a half-set
+// signing environment does not break debug builds or tests.
+val checkReleaseSigning by tasks.registering {
+    val problems = releaseSigningProblems
+    doLast {
+        if (problems.isNotEmpty()) {
+            throw GradleException("Release signing is misconfigured:\n  " + problems.joinToString("\n  "))
+        }
+    }
+}
+tasks.matching { it.name == "preReleaseBuild" }.configureEach { dependsOn(checkReleaseSigning) }
 
 dependencies {
     val composeBom = platform("androidx.compose:compose-bom:2026.06.01")

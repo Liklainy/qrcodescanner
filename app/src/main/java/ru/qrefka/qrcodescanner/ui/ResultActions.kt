@@ -154,7 +154,8 @@ internal fun formatEventTime(context: Context, event: ScanContent.Event): String
     ).toString()
 }
 
-private fun start(context: Context, intent: Intent) {
+/** Starts [intent] as a new task, or tells the user no installed app can handle it. */
+internal fun start(context: Context, intent: Intent) {
     try {
         context.startActivity(intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
     } catch (_: ActivityNotFoundException) {

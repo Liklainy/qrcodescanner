@@ -46,7 +46,7 @@ storage or photo permission and cannot browse your gallery. The image is decoded
 on the device, is not copied or stored, and is never transmitted.</p>
 
 <h2>4. Scanned and generated content</h2>
-<p>Text that you scan or encode is held in memory while the app is running. The app writes it to no database, preference file, or log, and declares <code>allowBackup="false"</code>, so it is not included in Android backups or device-transfer flows. The only thing the app keeps between launches is a single on/off flag recording that you agreed to this policy, stored in the app's private storage on your device.</p>
+<p>Text that you scan or encode is held in memory while the app is running. The app writes it to no database, preference file, or log, and declares <code>allowBackup="false"</code>, so it is not included in Android backups or device-transfer flows. Between launches the app keeps only a single on/off flag recording that you agreed to this policy, stored in the app's private storage on your device, and the images of QR codes you share (see <em>Files these actions create</em> below).</p>
 <p>Content leaves the app only through an action you take:</p>
 <table>
   <tr><th>Action</th><th>What happens</th></tr>

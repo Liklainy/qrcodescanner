@@ -23,7 +23,9 @@ keytool -genkeypair -v -keystore release.keystore -alias qrcode \
 ```
 
 Signing is read from environment variables (`app/build.gradle.kts`); without
-them the release build stays unsigned:
+them the release build stays unsigned. Once `SIGNING_KEYSTORE` is set the other three
+are required, and `-PrequireSigning` (used by the workflows and Fastlane) makes a
+missing keystore an error too:
 
 ```sh
 SIGNING_KEYSTORE=$PWD/release.keystore SIGNING_KEY_ALIAS=qrcode \
@@ -39,8 +41,8 @@ Two workflows publish builds:
 - `.github/workflows/release.yml` builds a signed APK when a `v*` tag is pushed and
   attaches it to a GitHub Release (notes from `fastlane/metadata/huawei/release_notes.txt`).
 - `.github/workflows/appgallery.yml` is started by hand (**Actions → AppGallery → Run
-  workflow**) and uploads to AppGallery through the `deploy_huawei` / `release_huawei`
-  Fastlane lanes. Leave *Submit for review* off for the first run, check the draft in
+  workflow**, with the release tag picked under *Use workflow from*) and uploads that
+  tag's build to AppGallery through the `deploy_huawei` / `release_huawei` Fastlane lanes. Leave *Submit for review* off for the first run, check the draft in
   the AGC console, and submit there.
 
 One-time setup — repository **Settings → Secrets and variables → Actions**:
@@ -63,8 +65,9 @@ Both workflows hand the keystore to Gradle as `SIGNING_KEYSTORE`,
 variables as a local build above and as `fastlane/.env.default`.
 
 To release, bump the version and notes first (see below), commit, then tag with
-`v` + `appVersionName`. The workflow stops if the tag and `gradle.properties` disagree,
-so a tag cannot ship a build nobody bumped:
+`v` + `appVersionName`. Both workflows stop if the tag and `appVersionName` disagree or
+`appVersionCode` is not higher than at the previous `v*` tag
+(`tools/check-release-version.sh`), so a tag cannot ship a build nobody bumped:
 
 ```sh
 git tag v1.0 && git push origin v1.0
@@ -76,7 +79,7 @@ git tag v1.0 && git push origin v1.0
 build — AppGallery rejects a duplicate. For every release, bump `appVersionCode` and
 `appVersionName` there and replace `fastlane/metadata/huawei/release_notes.txt`
 with this version's notes — both the GitHub Release and the AppGallery upload use
-that file as is. For a one-off local build you can pass the values in instead:
+that file as is. For a one-off local build (not a release) you can pass the values in instead:
 
 ```sh
 ./gradlew assembleRelease -PappVersionCode=2 -PappVersionName=1.1

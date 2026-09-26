@@ -1,19 +1,14 @@
 name: AppGallery
 
 # Manual only — a store upload is not something a push should do by accident.
-# Actions → AppGallery → Run workflow. Leave "submit for review" off for the
-# first run: upload, check the draft in the AGC console, then submit there.
+# Actions → AppGallery → Run workflow, and pick the release tag (v1.1, …) under
+# "Use workflow from": the store gets exactly the tagged build and its notes, with
+# the version from gradle.properties, the same as the GitHub Release. Leave
+# "submit for review" off for the first run: upload, check the draft in the AGC
+# console, then submit there.
 on:
   workflow_dispatch:
     inputs:
-      version_name:
-        description: 'versionName (blank = value from gradle.properties)'
-        required: false
-        default: ''
-      version_code:
-        description: 'versionCode (blank = value from gradle.properties; must beat the last upload)'
-        required: false
-        default: ''
       submit_for_review:
         description: 'Submit for review after upload'
         type: boolean
@@ -28,7 +23,18 @@ jobs:
   upload:
     runs-on: ubuntu-latest
     steps:
+      - name: Require a release tag
+        if: github.ref_type != 'tag'
+        run: |
+          echo "::error::Run this workflow from a v* release tag (\"Use workflow from\"), not from ${{ github.ref_name }}."
+          exit 1
+
       - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0  # the version check compares with the previous tag
+
+      - name: Check tag matches gradle.properties
+        run: tools/check-release-version.sh "$GITHUB_REF_NAME"
 
       - name: Set up JDK 21
         uses: actions/setup-java@v5
@@ -66,12 +72,7 @@ jobs:
           HUAWEI_CLIENT_ID: ${{ secrets.HUAWEI_CLIENT_ID }}
           HUAWEI_CLIENT_SECRET: ${{ secrets.HUAWEI_CLIENT_SECRET }}
           HUAWEI_APP_ID: ${{ secrets.HUAWEI_APP_ID }}
-          VERSION_NAME: ${{ inputs.version_name }}
-          VERSION_CODE: ${{ inputs.version_code }}
         run: |
-          # The Fastfile treats these as "set or absent", so drop them when blank.
-          if [ -z "$VERSION_NAME" ]; then unset VERSION_NAME; fi
-          if [ -z "$VERSION_CODE" ]; then unset VERSION_CODE; fi
           if [ "${{ inputs.submit_for_review }}" = "true" ]; then
             bundle exec fastlane release_huawei
           else

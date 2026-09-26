@@ -79,14 +79,14 @@ See [PUBLISHING.md](PUBLISHING.md) for signing and AppGallery upload instruction
 
 `versionCode` / `versionName` live in `gradle.properties` as `appVersionCode` and
 `appVersionName`. Bump `appVersionCode` for **every** store upload — AppGallery
-rejects a re-used one. A build can override them without editing the file:
+rejects a re-used one. A local build can override them without editing the file:
 
 ```sh
 ./gradlew assembleRelease -PappVersionCode=2 -PappVersionName=1.1
 ```
 
-Fastlane picks up the `VERSION_CODE` / `VERSION_NAME` environment variables and
-passes them through the same way.
+Release builds (the GitHub workflows and Fastlane) always use the values from
+`gradle.properties`, so the GitHub Release and the store upload of a tag match.
 
 ## Continuous integration
 
@@ -173,8 +173,8 @@ The app follows a single-Activity architecture with Compose navigation via tabs:
   device. The one thing kept across launches is the privacy-consent flag, a single
   boolean in the `consent` SharedPreferences (`PrivacyConsent.kt`). The two files the app
   can write are both user-initiated: a gallery PNG via `MediaStore`, and a
-  `cacheDir/shared_images/` copy that backs the Share action and is pruned after an hour
-  (`shareBitmap` in `GeneratorScreen.kt`).
+  `cacheDir/shared_images/` copy that backs the Share action; copies older than an hour
+  are pruned on the next share (`shareBitmap` in `GeneratorScreen.kt`).
 - **Wi-Fi without a Wi-Fi permission** — Saving a scanned network is delegated to the
   system "add network" dialog via `Settings.ACTION_WIFI_ADD_NETWORKS`
   (`addNetworkIntentOrNull` in `ScannerScreen.kt`). Settings owns the dialog and the write, so the app needs no

@@ -243,16 +243,13 @@ fun ScannerScreen(bottomReserve: Dp = 0.dp) {
             onPickImage = pickImage,
             onRequest = {
                 if (deniedPermanently) {
-                    try {
-                        context.startActivity(
-                            Intent(
-                                Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
-                                Uri.fromParts("package", context.packageName, null)
-                            )
+                    start(
+                        context,
+                        Intent(
+                            Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
+                            Uri.fromParts("package", context.packageName, null)
                         )
-                    } catch (_: ActivityNotFoundException) {
-                        toast(context, R.string.no_app_found)
-                    }
+                    )
                 } else {
                     launcher.launch(Manifest.permission.CAMERA)
                 }
@@ -1208,13 +1205,7 @@ private fun addNetworkMessage(outcome: ActivityResult): Int? {
 }
 
 private fun openWifiSettings(context: Context) {
-    try {
-        context.startActivity(
-            Intent(Settings.ACTION_WIFI_SETTINGS).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-        )
-    } catch (e: ActivityNotFoundException) {
-        toast(context, R.string.no_app_found)
-    }
+    start(context, Intent(Settings.ACTION_WIFI_SETTINGS))
 }
 
 private fun toast(context: Context, @StringRes message: Int) {

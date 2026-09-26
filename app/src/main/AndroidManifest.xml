@@ -28,9 +28,10 @@
         </intent>
     </queries>
 
-    <!-- The only thing kept across launches is the privacy-consent flag, which
-         belongs to this install: a restored device should ask again, so nothing
-         is backed up or transferred between devices. -->
+    <!-- The privacy-consent flag belongs to this install: a restored device should
+         ask again, so nothing is backed up or transferred between devices. On
+         Android 12+ allowBackup=false does not stop device transfer; the extraction
+         rules exclude every domain for that. -->
     <application
         android:allowBackup="false"
         android:dataExtractionRules="@xml/data_extraction_rules"

@@ -1,9 +1,7 @@
 package ru.qrefka.qrcodescanner.ui
 
-import android.content.ActivityNotFoundException
 import android.content.Context
 import android.content.Intent
-import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
@@ -136,13 +134,5 @@ fun PrivacyDialog(onDismiss: () -> Unit, onWithdraw: () -> Unit) {
 }
 
 private fun openPolicy(context: Context, url: String) {
-    try {
-        context.startActivity(
-            Intent(Intent.ACTION_VIEW, url.toUri())
-                .addCategory(Intent.CATEGORY_BROWSABLE)
-                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-        )
-    } catch (_: ActivityNotFoundException) {
-        Toast.makeText(context, context.getString(R.string.no_app_found), Toast.LENGTH_SHORT).show()
-    }
+    start(context, Intent(Intent.ACTION_VIEW, url.toUri()).addCategory(Intent.CATEGORY_BROWSABLE))
 }

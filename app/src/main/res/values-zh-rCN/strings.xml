@@ -69,7 +69,7 @@
     <string name="privacy_agree">同意</string>
     <string name="privacy_decline">不同意</string>
     <string name="privacy_policy_url">https://qrcodescanner.qrefka.ru/privacy.zh.html</string>
-    <string name="privacy_dialog_text">QRefka Scan 仅在您的设备上使用相机画面以及您选择的图片来识别二维码和条形码。扫描的内容不会被保存或发送，应用仅保留一个您已同意隐私政策的标记；本应用也没有网络访问权限。\n\n如果您撤回同意，应用将在您再次使用前重新征求您的同意。</string>
+    <string name="privacy_dialog_text">QRefka Scan 仅在您的设备上使用相机画面以及您选择的图片来识别二维码和条形码。扫描的内容不会被保存或发送，本应用也没有网络访问权限。应用仅保留一个您已同意隐私政策的标记；当您分享生成的二维码时，还会在其私有缓存中保留该图片的副本，供您分享给的应用读取。\n\n如果您撤回同意，应用将在您再次使用前重新征求您的同意。</string>
     <string name="privacy_open_policy">查看隐私政策</string>
     <string name="privacy_withdraw">撤回同意</string>
 </resources>
