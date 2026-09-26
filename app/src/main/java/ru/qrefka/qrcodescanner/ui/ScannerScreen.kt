@@ -49,6 +49,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -56,9 +57,11 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
@@ -408,14 +411,21 @@ private fun ScannerContent(
                 }
             }
         )
-        ViewfinderOverlay()
+        // Centred in the band the overlay controls leave free rather than on the whole
+        // window: the bottom carries the hint pill and the switcher, the top only one
+        // row of buttons, so a window-centred cutout looked like it was sinking. The
+        // zoom pill is left out on purpose, or the cutout would jump on every pinch.
+        ViewfinderOverlay(
+            topClear = OverlayMargin + OverlayButtonSize,
+            bottomClear = bottomReserve + HintGap + HintPillHeight
+        )
 
         Row(
             horizontalArrangement = Arrangement.spacedBy(12.dp),
             modifier = Modifier
                 .align(Alignment.TopEnd)
                 .statusBarsPadding()
-                .padding(16.dp)
+                .padding(OverlayMargin)
         ) {
             OverlayButton(
                 label = stringResource(R.string.scan_from_image),
@@ -438,7 +448,7 @@ private fun ScannerContent(
             modifier = Modifier
                 .align(Alignment.BottomCenter)
                 .navigationBarsPadding()
-                .padding(bottom = bottomReserve + 14.dp)
+                .padding(bottom = bottomReserve + HintGap)
                 .padding(horizontal = 24.dp)
         ) {
             zoom?.takeIf { it.zoomRatio > it.minZoomRatio + 0.05f }?.let {
@@ -448,6 +458,12 @@ private fun ScannerContent(
         }
     }
 }
+
+private val OverlayMargin = 16.dp
+private val OverlayButtonSize = 52.dp
+private val HintGap = 14.dp
+/** One line of labelLarge plus the pill's vertical padding. */
+private val HintPillHeight = 44.dp
 
 @Composable
 private fun OverlayPill(text: String) {
@@ -474,7 +490,7 @@ private fun OverlayButton(
         shape = CircleShape,
         color = if (active) MaterialTheme.colorScheme.primary else Color.Black.copy(alpha = 0.55f),
         modifier = Modifier
-            .size(52.dp)
+            .size(OverlayButtonSize)
             .semantics { contentDescription = label }
     ) {
         Box(contentAlignment = Alignment.Center) {
@@ -549,8 +565,14 @@ private fun CameraPreview(onCamera: (Camera?) -> Unit, onDecoded: (Result) -> Un
     AndroidView(factory = { previewView }, modifier = Modifier.fillMaxSize())
 }
 
+/**
+ * @param topClear height the overlay controls take below the status bar.
+ * @param bottomClear height the overlay controls take above the navigation bar.
+ */
 @Composable
-private fun ViewfinderOverlay() {
+private fun ViewfinderOverlay(topClear: Dp, bottomClear: Dp) {
+    val statusBars = WindowInsets.statusBars
+    val navigationBars = WindowInsets.navigationBars
     val bracketColor = MaterialTheme.colorScheme.primary
     // A slow sweep across the cutout, so the viewfinder looks alive while it waits.
     val sweep = rememberInfiniteTransition(label = "viewfinder").animateFloat(
@@ -563,11 +585,19 @@ private fun ViewfinderOverlay() {
         label = "sweep"
     )
     Canvas(modifier = Modifier.fillMaxSize()) {
+        val bandTop = statusBars.getTop(this) + topClear.toPx()
+        val bandBottom = size.height - navigationBars.getBottom(this) - bottomClear.toPx()
         // Scales with the window instead of a fixed 260dp, so the cutout stays
         // proportionate on a tablet and does not crowd the edges on a small phone.
-        val viewfinderSize = (size.minDimension * 0.7f).coerceAtMost(340.dp.toPx())
+        // It also keeps clear of the controls where the band is short (landscape),
+        // down to a floor below which it would be too small to aim with.
+        val viewfinderSize = minOf(
+            size.minDimension * 0.7f,
+            340.dp.toPx(),
+            bandBottom - bandTop - 32.dp.toPx()
+        ).coerceAtLeast(180.dp.toPx())
         val cx = size.width / 2
-        val cy = size.height / 2
+        val cy = (bandTop + bandBottom) / 2
         val left = cx - viewfinderSize / 2
         val top = cy - viewfinderSize / 2
         val right = cx + viewfinderSize / 2

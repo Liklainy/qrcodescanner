@@ -5,13 +5,8 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.tween
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.slideInVertically
-import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -30,6 +25,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -40,10 +36,13 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.CompositingStrategy
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
@@ -147,7 +146,13 @@ private fun AppShell(
     // The switcher floats over the content rather than sitting in a bottomBar, so the
     // camera can run to all four edges. It steps aside for the keyboard, which would
     // otherwise shove a pill full of tabs into the middle of the generator screen.
-    val imeVisible = WindowInsets.ime.getBottom(density) > 0
+    // Its position is driven by the keyboard inset frame by frame, not by a separate
+    // show/hide animation: it rises as the keyboard falls and meets the generator's
+    // button right where that button's padding stops following the keyboard.
+    val ime = WindowInsets.ime
+    // Only flips at the ends of the keyboard animation, so this recomposes twice per
+    // show or hide rather than on every frame of it.
+    val imeVisible by remember(ime, density) { derivedStateOf { ime.getBottom(density) > 0 } }
 
     Box(
         Modifier
@@ -166,24 +171,30 @@ private fun AppShell(
             }
         }
 
-        AnimatedVisibility(
-            visible = !imeVisible,
-            enter = fadeIn() + slideInVertically { it },
-            exit = fadeOut() + slideOutVertically { it },
+        // The privacy button rides next to the switcher so the policy stays one tap
+        // away on both tabs, whatever state the screen underneath is in.
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(10.dp),
+            verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier
                 .align(Alignment.BottomCenter)
                 .windowInsetsPadding(WindowInsets.navigationBars)
                 .padding(bottom = 20.dp)
+                // The inset is read inside the layer block, so the keyboard animation
+                // only redraws this layer instead of recomposing the shell each frame.
+                // ModulateAlpha applies the fade per draw call: the default offscreen
+                // buffer is clipped to the Row's bounds and cropped the pills' shadows.
+                .graphicsLayer {
+                    val imePx = ime.getBottom(this).toFloat()
+                    translationY = imePx
+                    alpha = 1f - (imePx / SwitcherReserve.toPx()).coerceIn(0f, 1f)
+                    compositingStrategy = CompositingStrategy.ModulateAlpha
+                }
+                // Pushed off-screen rather than removed, so keep TalkBack off it.
+                .then(if (imeVisible) Modifier.clearAndSetSemantics {} else Modifier)
         ) {
-            // The privacy button rides next to the switcher so the policy stays one tap
-            // away on both tabs, whatever state the screen underneath is in.
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(10.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                TabSwitcher(selected = tab, onSelect = onTabSelected)
-                PrivacyButton(onClick = { showPrivacy = true })
-            }
+            TabSwitcher(selected = tab, onSelect = onTabSelected)
+            PrivacyButton(onClick = { showPrivacy = true })
         }
     }
 
